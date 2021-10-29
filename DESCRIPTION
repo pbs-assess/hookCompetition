@@ -26,3 +26,4 @@ Depends:
     raster (>= 3.4.13),
     abind (>= 1.4.5)
 RoxygenNote: 7.1.1
+Remotes: url::https://inla.r-inla-download.org/R/testing
