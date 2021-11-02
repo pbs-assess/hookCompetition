@@ -33,9 +33,9 @@ Imports:
     gfiphc (>= 0.0.0.9000),
     rlang (>= 0.4.11)
 RoxygenNote: 7.1.1
-Remotes: url::https://inla.r-inla-download.org/R/testing,
-         github::pbs-assess/gfiphc
+Remotes: github::pbs-assess/gfiphc
 Suggests: 
     rmarkdown,
     knitr
 VignetteBuilder: knitr
+Additional_repositories: https://inla.r-inla-download.org/R/testing
