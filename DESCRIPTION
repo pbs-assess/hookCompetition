@@ -14,7 +14,6 @@ Depends:
 Imports: 
     sp (>= 1.4.5),
     maptools (>= 1.1.1),
-    INLA (>= 21.3.27),
     inlabru (>= 2.2.8.9000),
     plyr (>= 1.8.6),
     rgeos (>= 0.5.5),
@@ -33,9 +32,11 @@ Imports:
     gfiphc (>= 0.0.0.9000),
     rlang (>= 0.4.11)
 RoxygenNote: 7.1.1
-Remotes: url::https://inla.r-inla-download.org/R/testing/src/contrib/INLA_21.03.27.tar.gz,
-         github::pbs-assess/gfiphc
+Remotes: github::pbs-assess/gfiphc
 Suggests: 
     rmarkdown,
-    knitr
+    knitr,
+    INLA
 VignetteBuilder: knitr
+Additional_repositories: 
+    https://inla.r-inla-download.org/R/testing
