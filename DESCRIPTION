@@ -34,7 +34,7 @@ Imports:
     rlang (>= 0.4.11)
 RoxygenNote: 7.1.1
 Remotes: url::https://inla.r-inla-download.org/R/testing,
-         git::https://github.com/pbs-assess/gfiphc
+         github::pbs-assess/gfiphc
 Suggests: 
     rmarkdown,
     knitr
