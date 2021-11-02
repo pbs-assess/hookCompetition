@@ -242,7 +242,7 @@ spatiotemp_censored_index_fun <- function(data, survey_boundaries, species, M=10
 
     A_pred_t <- INLA::inla.spde.make.A(tmesh, loc = df_tmp$year)
     pred_df2 <- A_pred_t %*% INLA::inla.posterior.sample.eval(
-      fun='c(yearind)',
+      fun='yearind',
       samples=pred_df_samp)
 
     # No need to add spatial GRF as it is static across time so will not impact relative abundance indices
@@ -259,7 +259,7 @@ spatiotemp_censored_index_fun <- function(data, survey_boundaries, species, M=10
                                     group = df_tmp$year, group.mesh = tmesh)
       pred_df2 <- pred_df2 +
         A_pred_st %*% INLA::inla.posterior.sample.eval(
-          fun='c(spacetimeind)',
+          fun='spacetimeind',
           samples=pred_df_samp)
     }
 

@@ -202,7 +202,7 @@ censored_index_fun <- function(data, survey_boundaries, species, M=1000, return=
 
       A_pred <- INLA::inla.spde.make.A(tmesh, loc = df_tmp$year, repl=df_tmp$region_INLA, n.repl = nregion)
       pred_df2 <- A_pred %*% INLA::inla.posterior.sample.eval(
-        fun='c(yearind)',
+        fun='yearind',
         samples=pred_df_samp)
 
       # if(preserve_inter_regional_differences)

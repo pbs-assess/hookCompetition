@@ -78,13 +78,18 @@ make_spatial_objects <- function(data, survey_boundaries=NULL, mesh_coast=NULL, 
   #Next, we define the barrier spde model using the function `inla.barrier.pcmatern()`. This defines an R-generic model that can now be handles in *inlabru* through the use of the `bru_mapper()` function. Then, for the purposes of exploratory analysis, we define a final count variable 'Other'. This will store the counts of caught fish other species.
 
   # Define the r-generic model
-  spde_mod <- INLA::inla.barrier.pcmatern(
+  # spde_mod <- INLA::inla.barrier.pcmatern(
+  #   mesh = mesh,
+  #   barrier.triangles = triangle_ind,
+  #   prior.range = c(prior_range, prior_range_prob),
+  #   prior.sigma = c(prior_sigma, prior_sigma_prob),
+  #   range.fraction = 0.1)
+
+  spde_mod <- INLA::inla.spde2.pcmatern(
     mesh = mesh,
-    barrier.triangles = triangle_ind,
     prior.range = c(prior_range, prior_range_prob),
     prior.sigma = c(prior_sigma, prior_sigma_prob),
-    range.fraction = 0.1)
-
+  )
   predict_pixels <- inlabru::pixels(mesh, mask=survey_boundaries)
   # extract centroids of the pixels
   predict_points <-
