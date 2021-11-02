@@ -185,7 +185,7 @@ censored_index_fun(
 # Model now converges
 censored_ind <-
 censored_index_fun(
-  data=Reduced_data_sp, survey_boundaries=survey_boundaries, species='yelloweye', M=n_samp, return=T, ICR_adjust=F, cprop=0.95, nthreads=n_cores, keep=F, use_upper_bound=TRUE, upper_bound_quantile=0.98, plot=T, allyears=F, station_effects=T, prior_event=HT.prior(), prior_station=HT.prior(), init_vals = c(0.228, -2.346, 2.407, -0.586), n_knots=8, seed=0, verbose=F, n_trajectories=10,
+  data=Reduced_data_sp, survey_boundaries=survey_boundaries, species='yelloweye', M=n_samp, return=T, ICR_adjust=F, cprop=0.95, nthreads=n_cores, keep=F, use_upper_bound=TRUE, upper_bound_quantile=0.95, plot=T, allyears=F, station_effects=T, prior_event=HT.prior(), prior_station=HT.prior(), init_vals = c(0.228, -2.346, 2.407, -0.586), n_knots=8, seed=0, verbose=F, n_trajectories=10,
   preserve_inter_regional_differences = F
     )
 
@@ -263,7 +263,7 @@ Note that *these models can take a while to run (5-30 minutes)*. We advise you t
 ```{r spatiotemporal, eval=F, cache=F, warning=F, message=F}
 
 spatio_temporal_CPUE_ind <-
-  spatiotemp_censored_index_fun(data=Reduced_data_sp, survey_boundaries=survey_boundaries, species='yelloweye', M=n_samp, return=T, ICR_adjust=F, cprop=1.1, nthreads=n_cores, keep=F, use_upper_bound=FALSE, upper_bound_quantile=1.1, plot=T, allyears=F, station_effects=T, prior_event=HT.prior(), prior_station=HT.prior(), init_vals = c(0.345, -2.083, 2.711, -0.861, 0.278, 3.926, -0.101, 3.497, 2.938), n_knots=8, seed=0, mesh=mesh, spde=spde_mod, pixels=predict_pixels, covs=NULL, spatiotemporal=T, verbose = F, n_trajectories = 10,
+  spatiotemp_censored_index_fun(data=Reduced_data_sp, survey_boundaries=survey_boundaries, species='yelloweye', M=n_samp, return=T, ICR_adjust=F, cprop=1.1, nthreads=n_cores, keep=F, use_upper_bound=FALSE, upper_bound_quantile=1.1, plot=T, allyears=F, station_effects=T, prior_event=HT.prior(), prior_station=HT.prior(), init_vals = c(0.385, -2.083, 2.711, -0.861, 4.000, 0.200, 3.400, 0.300, 2.938), n_knots=8, seed=0, mesh=mesh, spde=spde_mod, pixels=predict_pixels, covs=NULL, spatiotemporal=T, verbose = F, n_trajectories = 10,
   preserve_inter_regional_differences = F)
 
 

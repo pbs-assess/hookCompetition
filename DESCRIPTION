@@ -30,7 +30,8 @@ Imports:
     RColorBrewer (>= 1.1-2),
     magrittr (>= 2.0.1),
     gfiphc (>= 0.0.0.9000),
-    rlang (>= 0.4.11)
+    rlang (>= 0.4.11),
+    Matrix
 RoxygenNote: 7.1.1
 Remotes: github::pbs-assess/gfiphc
 Suggests: 
