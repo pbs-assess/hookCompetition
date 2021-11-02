@@ -165,13 +165,13 @@ We now fit all three indices
 ```{r model-based, cache=F, warning=F, message=F}
 CPUE_ind <-
 censored_index_fun(
-  data=Reduced_data_sp, survey_boundaries=survey_boundaries, species='yelloweye', M=n_samp, return=T, ICR_adjust=F, cprop=1.1, nthreads=n_cores, keep=F, use_upper_bound=FALSE, upper_bound_quantile=1.1, plot=T, allyears=F, station_effects=T, prior_event=HT.prior(), prior_station=HT.prior(), init_vals = c(0.228, -2.346, 2.407, -0.586), n_knots=8, seed=0, verbose=F, n_trajectories=10,
+  data=Reduced_data_sp, survey_boundaries=survey_boundaries, species='yelloweye', M=n_samp, return=T, ICR_adjust=F, cprop=1.1, nthreads=n_cores, keep=F, use_upper_bound=FALSE, upper_bound_quantile=1.1, plot=T, allyears=F, station_effects=T, prior_event=HT.prior(), prior_station=HT.prior(), init_vals = c(0.228, -2.346, 2.407, -0.586), n_knots=8, seed=0, verbose=T, n_trajectories=10,
   preserve_inter_regional_differences = F
 )
 
 ICR_ind <-
 censored_index_fun(
-  data=Reduced_data_sp, survey_boundaries=survey_boundaries, species='yelloweye', M=n_samp, return=T, ICR_adjust=T, cprop=1.1, nthreads=n_cores, keep=F, use_upper_bound=FALSE, upper_bound_quantile=1.1, plot=T, allyears=F, station_effects=T, prior_event=HT.prior(), prior_station=HT.prior(), init_vals = c(0.228, -2.346, 2.407, -0.586), n_knots=8, seed=0, verbose=F, n_trajectories=10,
+  data=Reduced_data_sp, survey_boundaries=survey_boundaries, species='yelloweye', M=n_samp, return=T, ICR_adjust=T, cprop=1.1, nthreads=n_cores, keep=F, use_upper_bound=FALSE, upper_bound_quantile=1.1, plot=T, allyears=F, station_effects=T, prior_event=HT.prior(), prior_station=HT.prior(), init_vals = c(0.228, -2.346, 2.407, -0.586), n_knots=8, seed=0, verbose=T, n_trajectories=10,
   preserve_inter_regional_differences = F
 )
 
@@ -185,7 +185,7 @@ censored_index_fun(
 # Model now converges
 censored_ind <-
 censored_index_fun(
-  data=Reduced_data_sp, survey_boundaries=survey_boundaries, species='yelloweye', M=n_samp, return=T, ICR_adjust=F, cprop=0.95, nthreads=n_cores, keep=F, use_upper_bound=TRUE, upper_bound_quantile=0.95, plot=T, allyears=F, station_effects=T, prior_event=HT.prior(), prior_station=HT.prior(), init_vals = c(0.228, -2.346, 2.407, -0.586), n_knots=8, seed=0, verbose=F, n_trajectories=10,
+  data=Reduced_data_sp, survey_boundaries=survey_boundaries, species='yelloweye', M=n_samp, return=T, ICR_adjust=F, cprop=0.95, nthreads=n_cores, keep=F, use_upper_bound=TRUE, upper_bound_quantile=0.95, plot=T, allyears=F, station_effects=T, prior_event=HT.prior(), prior_station=HT.prior(), init_vals = c(0.228, -2.346, 2.407, -0.586), n_knots=8, seed=0, verbose=T, n_trajectories=10,
   preserve_inter_regional_differences = F
     )
 
