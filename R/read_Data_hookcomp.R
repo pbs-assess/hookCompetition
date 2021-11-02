@@ -1,5 +1,23 @@
+#' Loads the IPHC catch count data for a species. It returns a list containing
+#' two entries:
+#' \code{Reduced_data_sp} is a \code{SpatialPointsDataFrame} containing all the
+#' set-level catch counts of the species specified (e.g. stored as a variable
+#' name `N_it_yelloweye`).
+#' \code{survey_boundaries} are the survey boundaries projected into the same
+#' CRS as the \code{Reduced_data_sp} object.
+#'
+#' @param species_vec is a character vector of the one or more species desired for modelling
+#' @param at_PBS is a logical flag determining if the user has access to the gf data. If FALSE, yelloweye rockfish must be the specified species.
+#' @param simple_species_vec is a character vector containing the desired shortened names of the species
+#' @param data_wd is a character vector stating the working directory where the rds files will be saved
+#' @param min_dist is a numeric stating the minimum distance (km) required for a temporary IPHC station to be from a permanent IPHC station to be included
+#' @param min_dist_to_boundary is a numeric stating the minimum distance (km) required for an IPHC station to be from the survey boundary
+#' @param years_all_vec is a numeric vector stating the years all hooks were enumerated
+#' @param years_20_vec is a numeric vector stating the years only 20 hooks were enumerated
+#' @param survey_boundaries is a SpatialPolygonsDataFrame object containing user-specified survey boundaries for indices to be computed in. If NULL QCS, WCHG, WCVI, HS used. The data.frame *must* contain a factor variable `Region` with levels equal to the names of the regions
 #' @export
-# Function for reading in data and shaping it into the format required by package
+#' @importFrom magrittr %>%
+#' @import stats
 read_Data_hookcomp <- function(species_vec='yelloweye rockfish', at_PBS=F,
                                simple_species_vec='yelloweye',
                                data_wd = './',
@@ -39,17 +57,17 @@ read_Data_hookcomp <- function(species_vec='yelloweye rockfish', at_PBS=F,
     # This chunk will only work within PBS
     for(sp in species_vec)
     {
-      cache_pbs_data_iphc(sp)
+      gfiphc::cache_pbs_data_iphc(sp)
       # Creates 'sp'.rds.
     }
 
-    cache_pbs_data_iphc("hook with bait")
+    gfiphc::cache_pbs_data_iphc("hook with bait")
     # creates hook-with-bait.rds
 
-    saveRDS(get_iphc_sets_info(), "sets-other-years.rds", compress = TRUE)
+    saveRDS(gfiphc::get_iphc_sets_info(), "sets-other-years.rds", compress = TRUE)
     # extracts the set level data from GFBio for 2003 onwards (excluding 2013)
 
-    saveRDS(get_iphc_skates_info(), "skates-other-years.rds", compress = TRUE)
+    #saveRDS(gfiphc::get_iphc_skates_info(), "skates-other-years.rds", compress = TRUE)
     # extracts skate level data from GFBio for 2003 onwards (excluding 2013)
   }
   # If not within PBS, the code below requires the above rds files offline
@@ -76,7 +94,7 @@ read_Data_hookcomp <- function(species_vec='yelloweye rockfish', at_PBS=F,
     },
     error=function(cond)
     {
-      return((hookcompetition::`hook-with-bait`)$set_counts)
+      return((hookcompetition::hook_with_bait)$set_counts)
     },
     finally={
 
@@ -94,25 +112,25 @@ read_Data_hookcomp <- function(species_vec='yelloweye rockfish', at_PBS=F,
     },
     error=function(cond)
     {
-      return(hookcompetition::`sets-other-years`)
+      return(hookcompetition::sets_other_years)
     },
     finally={
 
     }
   ))
 
-  skates <- suppressWarnings(tryCatch(
-    {
-      readRDS("skates-other-years.rds")$set_counts
-    },
-    error=function(cond)
-    {
-      return(hookcompetition::`skates-other-years`)
-    },
-    finally={
-
-    }
-  ))
+  # skates <- suppressWarnings(tryCatch(
+  #   {
+  #     readRDS("skates-other-years.rds")$set_counts
+  #   },
+  #   error=function(cond)
+  #   {
+  #     return(hookcompetition::`skates-other-years`)
+  #   },
+  #   finally={
+  #
+  #   }
+  # ))
 
   # loop through the datasets compute the neccessary data
   tmp <- vector('list',length(data_species_vec))
@@ -125,11 +143,11 @@ read_Data_hookcomp <- function(species_vec='yelloweye rockfish', at_PBS=F,
       },
       error=function(cond)
       {
-        if(species_vec[i] == 'yelloweye rockfish')
+        if(species_vec[i] == 'yelloweye rockfish' & at_PBS == F)
         {
-          return((hookcompetition::`yelloweye-rockfish`)$set_counts)
+          return((hookcompetition::yelloweye_rockfish)$set_counts)
         }
-        if(species_vec[i] != 'yelloweye rockfish')
+        if(species_vec[i] != 'yelloweye rockfish' | at_PBS == T)
         {
           stop(paste0('the rds file for species ',sp,' is not available.'))
         }
@@ -178,7 +196,7 @@ read_Data_hookcomp <- function(species_vec='yelloweye rockfish', at_PBS=F,
       # keep only the relevant variables specified by var_names vector
       All_data_sp <-
         All_data_sp %>%
-        inner_join(tmp[[i]][,var_names_species[[i]]])
+        dplyr::inner_join(tmp[[i]][,var_names_species[[i]]])
 
       # All_data_sp_skate <-
       #   All_data_sp_skate %>%
@@ -189,9 +207,9 @@ read_Data_hookcomp <- function(species_vec='yelloweye rockfish', at_PBS=F,
 
   All_data_sp <-
     All_data_sp %>%
-    inner_join(hook_with_bait[,c(1,2,3,4,5,8,11,12,13,14,15)]) %>%
-    left_join(sets[,c('year','setID','tripID','station','long','lat','obsHooksPerSet','deplHooksPerSet','effSkateIPHC','skatesCount','usable','iphcUsabilityDesc','standard','setInTrip')]) %>%
-    left_join(unique(sets_1996_2002[,c('year','station','obsHooksPerSet','usable')]),
+    dplyr::inner_join(hook_with_bait[,c(1,2,3,4,5,8,11,12,13,14,15)]) %>%
+    dplyr::left_join(sets[,c('year','setID','tripID','station','long','lat','obsHooksPerSet','deplHooksPerSet','effSkateIPHC','skatesCount','usable','iphcUsabilityDesc','standard','setInTrip')]) %>%
+    dplyr::left_join(unique(sets_1996_2002[,c('year','station','obsHooksPerSet','usable')]),
               by=c('year','station'))
 
   # Merge the new usable.x and usable.y and obsHooksPerSet.x and obsHooksPerSet.y
@@ -206,10 +224,10 @@ read_Data_hookcomp <- function(species_vec='yelloweye rockfish', at_PBS=F,
                             c('obsHooksPerSet.y','obsHooksPerSet.x',
                               'usable.y','usable.x')))]
 
-  All_data_sp <- SpatialPointsDataFrame(
+  All_data_sp <- sp::SpatialPointsDataFrame(
     coords = cbind(All_data_sp$lon,All_data_sp$lat),
     data = All_data_sp,
-    proj4string = CRS(SRS_string = 'EPSG:4326'))
+    proj4string = sp::CRS(SRS_string = 'EPSG:4326'))
 
   # Update the effective skate to match the number of hooks observed
   All_data_sp$effSkateIPHC[which(All_data_sp$year %in% years_all_vec)] <-
@@ -222,19 +240,19 @@ read_Data_hookcomp <- function(species_vec='yelloweye rockfish', at_PBS=F,
     survey_boundaries <-
       hookcompetition::survey_boundaries
 
-    survey_boundaries <- SpatialPolygons(
-      Srl=list(Polygons(list(Polygon(coords = survey_boundaries$HS)),ID=c('HS')),
-               Polygons(list(Polygon(coords = survey_boundaries$QCS)),ID=c('QCS')),
-               Polygons(list(Polygon(coords = survey_boundaries$WCHG)),ID=c('WCHG')),
-               Polygons(list(Polygon(coords = survey_boundaries$WCVI)),ID=c('WCVI'))),
-      proj4string = CRS(SRS_string = 'EPSG:4326'))
-
-    survey_df <- data.frame(Region = factor(names(survey_boundaries)))
-    rownames(survey_df) <- names(survey_boundaries)
-
-    survey_boundaries <- SpatialPolygonsDataFrame(
-      survey_boundaries,
-      data=survey_df)
+    # survey_boundaries <- sp::SpatialPolygons(
+    #   Srl=list(sp::Polygons(list(sp::Polygon(coords = survey_boundaries$HS)),ID=c('HS')),
+    #            sp::Polygons(list(sp::Polygon(coords = survey_boundaries$QCS)),ID=c('QCS')),
+    #            sp::Polygons(list(sp::Polygon(coords = survey_boundaries$WCHG)),ID=c('WCHG')),
+    #            sp::Polygons(list(sp::Polygon(coords = survey_boundaries$WCVI)),ID=c('WCVI'))),
+    #   proj4string = sp::CRS(SRS_string = 'EPSG:4326'))
+    #
+    # survey_df <- data.frame(Region = factor(names(survey_boundaries)))
+    # rownames(survey_df) <- names(survey_boundaries)
+    #
+    # survey_boundaries <- sp::SpatialPolygonsDataFrame(
+    #   survey_boundaries,
+    #   data=survey_df)
   }
 
   # # Convert all objects to a 'Canadian CRS'
@@ -244,12 +262,12 @@ read_Data_hookcomp <- function(species_vec='yelloweye rockfish', at_PBS=F,
   # All_data_sp <- spTransform(All_data_sp,M_CRS)
 
   # Change to a new 'Canadian' CRS in units of km
-  KM_CRS <- CRS('+proj=aea +lat_0=45 +lon_0=-126 +lat_1=50 +lat_2=58.5 +x_0=1000000 +y_0=0
+  KM_CRS <- sp::CRS('+proj=aea +lat_0=45 +lon_0=-126 +lat_1=50 +lat_2=58.5 +x_0=1000000 +y_0=0
 +datum=NAD83 +units=km +no_defs')
 
-  survey_boundaries <- spTransform(survey_boundaries,KM_CRS)
+  survey_boundaries <- sp::spTransform(survey_boundaries,KM_CRS)
 
-  All_data_sp <- spTransform(All_data_sp,KM_CRS)
+  All_data_sp <- sp::spTransform(All_data_sp,KM_CRS)
   #All_data_sp_skate <- spTransform(All_data_sp_skate,KM_CRS)
 
   # Where are all the stations that only record in a single year that lie within
@@ -258,7 +276,7 @@ read_Data_hookcomp <- function(species_vec='yelloweye rockfish', at_PBS=F,
 
   ind_singleyear <- All_data_sp$station %in% names(table(All_data_sp$station)[which(table(All_data_sp$station)==1)])
 
-  ind_close <- apply(gDistance(All_data_sp,
+  ind_close <- apply(rgeos::gDistance(All_data_sp,
                                All_data_sp[which(ind_multiyear),],
                                byid = T), 2,
                      FUN = function(x){min(x)<min_dist})
@@ -270,11 +288,11 @@ read_Data_hookcomp <- function(species_vec='yelloweye rockfish', at_PBS=F,
     (All_data_sp$obsHooksPerSet-All_data_sp$N_it_hook)/All_data_sp$obsHooksPerSet
 
   All_data_sp$region_INLA <-
-    apply(gDistance(survey_boundaries, All_data_sp, byid=T),
+    apply(rgeos::gDistance(survey_boundaries, All_data_sp, byid=T),
           MARGIN=1, FUN=function(x){
             which.min(x)})
 
-  ind_close2 <- apply(gDistance(All_data_sp,
+  ind_close2 <- apply(rgeos::gDistance(All_data_sp,
                                 survey_boundaries,
                                 byid = T), 2,
                       FUN = function(x){min(x)>min_dist_to_boundary})

@@ -1,0 +1,12 @@
+#' IPHC data on hooks returned with bait obtained from gfiphc package using function gfiphc::cache_pbs_data_iphc
+#'
+#' A tibble object
+#'
+#' @format A tibble object:
+#' \describe{
+#'   \item{E_it}{The effective skate of the set during experiments that enumerate all hooks}
+#'   \item{E_it20}{The effective skate of the set during experiments that enumerate only 20 hooks}
+#'   \item{N_it}{The number of hooks returning bait during experiments that enumerate all hooks}
+#'   \item{N_it20}{The number of hooks returning bait during experiments that enumerate only 20 hooks}
+#' }
+"hook_with_bait"
