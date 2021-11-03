@@ -40,7 +40,7 @@ jobs:
           use-public-rspm: true
 
       - name: Install system dependencies on MacOS (X11, gdal)
-        if: runner.os == 'macOS-latest'
+        if: runner.os == 'macOS'
         run: |
           brew install --cask xquartz
           brew install pkg-config
@@ -48,7 +48,7 @@ jobs:
           brew install gdal
 
       - name: Install system dependencies on MacOS (X11, gdal)
-        if: runner.os == 'ubuntu-latest'
+        if: runner.os == 'Linux'
         run: |
           sudo add-apt-repository ppa:ubuntugis/ppa && sudo apt-get update
           sudo apt-get install gdal-bin
@@ -61,7 +61,7 @@ jobs:
 
       - name: Add inla repo
         run: |
-          writeLines('options(repos = c(INLA = "https://inla.r-inla-download.org/R/stable/", getOption(\"repos\")))', file("~/.Rprofile", "ab"))
+          writeLines('options(repos = c(INLA = "https://inla.r-inla-download.org/R/testing/", getOption(\"repos\")))', file("~/.Rprofile", "ab"))
         shell: Rscript {0}
 
       - uses: r-lib/actions/setup-r-dependencies@v1
