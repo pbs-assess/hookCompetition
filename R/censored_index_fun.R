@@ -157,9 +157,9 @@ censored_index_fun <- function(data, survey_boundaries, species, M=1000, return=
     effects = list(t_index, data@data[,-ind_var]),
     remove.unused = F)
 
-  mod <- tryCatch(
-    {
-      INLA::inla(formula = formulae,
+  # mod <- tryCatch(
+  #   {
+  mod <- INLA::inla(formula = formulae,
            family='cenpoisson2',
            data= INLA::inla.stack.data(stk),
            E=data$effSkateIPHC,
@@ -169,16 +169,16 @@ censored_index_fun <- function(data, survey_boundaries, species, M=1000, return=
            #control.inla = list(adapt.hessian.mode=F),
            num.threads = paste0(nthreads,":1"),
            verbose = verbose)
-    },
-    error=function(cond)
-    {
-      return(NULL)
-    },
-
-    finally={
-
-    }
-  )
+  #   },
+  #   error=function(cond)
+  #   {
+  #     return(NULL)
+  #   },
+  #
+  #   finally={
+  #
+  #   }
+  # )
 
   pred_df<-NULL
   trajectory_samples <- NULL
