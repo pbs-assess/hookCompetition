@@ -47,12 +47,11 @@ jobs:
           brew install proj@8
           brew install gdal
 
-      - name: Install system dependencies on MacOS (X11, gdal)
+      - name: Install system dependencies on Linux (gdal)
         if: runner.os == 'Linux'
         run: |
           sudo add-apt-repository ppa:ubuntugis/ppa && sudo apt-get update
-          sudo apt-get install gdal-bin
-          sudo apt-get install libgdal-dev
+          sudo apt-get install gdal-bin proj-bin libgdal-dev libproj-dev
 
       - name: Query dependencies
         run: |
