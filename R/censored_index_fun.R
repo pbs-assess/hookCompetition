@@ -187,7 +187,7 @@ censored_index_fun <- function(data, survey_boundaries, species, M=1000, return=
     print('Numerical approximation not sufficiently accurate - refitting model at previous mode')
     mod <- tryCatch(
          {
-           inla.rerun(mod)
+           INLA::inla.rerun(mod)
          },
           error=function(cond)
          {

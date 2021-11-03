@@ -225,7 +225,7 @@ spatiotemp_censored_index_fun <- function(data, survey_boundaries, species, M=10
   if(!is.null(mod) & mod$misc$mode.status==1000)
   {
     print('Numerical approximation not sufficiently accurate - refitting model at previous mode')
-    mod <- inla.rerun(mod)
+    mod <- INLA::inla.rerun(mod)
   }
 
   pred_df<-NULL

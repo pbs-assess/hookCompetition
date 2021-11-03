@@ -39,24 +39,9 @@ jobs:
           http-user-agent: ${{ matrix.config.http-user-agent }}
           use-public-rspm: true
 
-      - name: Install system dependencies on MacOS (X11, gdal)
-        if: runner.os == 'macOS'
-        run: |
-          brew install --cask xquartz
-          brew install pkg-config
-          brew install gdal
-
-      - name: Install system dependencies on Linux (gdal)
-        if: runner.os == 'Linux'
-        run: |
-          sudo add-apt-repository ppa:ubuntugis/ppa && sudo apt-get update
-          sudo apt-get install libudunits2-dev libgdal-dev libgeos-dev libproj-dev
-
       - name: Query dependencies
         run: |
           install.packages("Matrix")
-          install.packages("rgdal", configure.args = c("--with-proj-lib=/usr/local/lib/", "--with-proj-include=/usr/local/include/"))
-          install.packages("sf", configure.args = "--with-proj-lib=/usr/local/lib/")
         shell: Rscript {0}
 
       - name: Add inla repo
