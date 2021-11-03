@@ -33,7 +33,7 @@
 #' @import stats
 spatiotemp_censored_index_fun <- function(data, survey_boundaries, species, M=1000, return=T, ICR_adjust=F, cprop=1.1, nthreads=1, keep=F, use_upper_bound=FALSE, upper_bound_quantile=1, plot=T, allyears=F, station_effects=T, prior_event=HT.prior(), prior_station=HT.prior(), init_vals = NULL, n_knots=8, seed=0, verbose=F, covs=NULL, spatiotemporal=F, mesh, spde, pixels, n_trajectories=10, preserve_inter_regional_differences=F)
 {
-  data$N_dat <- as.matrix(data@data[,c(paste0('N_it_',species))])[,1]
+  data$N_dat <- as.matrix(data[,c(paste0('N_it_',species))])[,1]
   # filter out NAs
   data <- data[which(!is.na(data$N_dat) & !is.na(data$effSkateIPHC) & !is.na(data$region_INLA) & !is.na(data$prop_removed)),]
 
@@ -64,10 +64,10 @@ spatiotemp_censored_index_fun <- function(data, survey_boundaries, species, M=10
 
   # Spatial and Spatio-temporal stuff
   s_index <- INLA::inla.spde.make.index('spaceind',mesh$n, n.repl=1)
-  A_s <- INLA::inla.spde.make.A(mesh=mesh, loc=data@coords[,1:2])
+  A_s <- INLA::inla.spde.make.A(mesh=mesh, loc=sf::st_coordinates(data)[,1:2])
   st_index <- INLA::inla.spde.make.index('spacetimeind',mesh$n, n.group=n_knots)
   A_st <- INLA::inla.spde.make.A(mesh=mesh,
-                           loc=data@coords[,1:2],
+                           loc=sf::st_coordinates(data)[,1:2],
                            group = data$year_INLA,
                            group.mesh = tmesh,
                            n.group = n_knots)
@@ -111,8 +111,8 @@ spatiotemp_censored_index_fun <- function(data, survey_boundaries, species, M=10
     {
       quant_regions <-
         matrix( rep(
-          as.numeric(by(data@data$N_dat,
-                        data@data$region_INLA,
+          as.numeric(by(data$N_dat,
+                        data$region_INLA,
                         FUN = function(x){quantile(x,upper_bound_quantile, na.rm=T)}, simplify = T)),
           times=nyear),
           nrow=nregion, ncol=nyear)
@@ -120,41 +120,41 @@ spatiotemp_censored_index_fun <- function(data, survey_boundaries, species, M=10
     if(!allyears)
     {
       quant_regions <-
-        matrix(by(data@data$N_dat,
-                  list(data@data$region_INLA,data@data$year_INLA),
+        matrix(by(data$N_dat,
+                  list(data$region_INLA,data$year_INLA),
                   FUN = function(x){quantile(x,upper_bound_quantile, na.rm=T)}, simplify = T), nrow=nregion, ncol=nyear)
     }
   }
 
-  upper_bound <- rep(0, length(data@data$prop_removed))
+  upper_bound <- rep(0, length(data$prop_removed))
   if(use_upper_bound)
   {
-    scale_fac <- rep(0, length(data@data$prop_removed))
-    scale_fac[data@data$prop_removed>cprop] <-
-      comp_factor_fun(signif((data@data[data@data$prop_removed>cprop,]$prop_removed-cprop)/(1-cprop),5),
-                      round((1-cprop)*data$obsHooksPerSet[data@data$prop_removed>cprop]))
+    scale_fac <- rep(0, length(data$prop_removed))
+    scale_fac[data$prop_removed>cprop] <-
+      comp_factor_fun(signif((data[data$prop_removed>cprop,]$prop_removed-cprop)/(1-cprop),5),
+                      round((1-cprop)*data$obsHooksPerSet[data$prop_removed>cprop]))
 
-    upper_bound[data@data$prop_removed>cprop] <- round(
-      (data@data$prop_removed[data@data$prop_removed>cprop]-cprop)*data$obsHooksPerSet[data@data$prop_removed>cprop]*
-        scale_fac[data@data$prop_removed>cprop])
+    upper_bound[data$prop_removed>cprop] <- round(
+      (data$prop_removed[data$prop_removed>cprop]-cprop)*data$obsHooksPerSet[data$prop_removed>cprop]*
+        scale_fac[data$prop_removed>cprop])
   }
 
-  data$low <- rep(Inf,dim(data@data)[1])
-  data$high <- rep(Inf,dim(data@data)[1])
+  data$low <- rep(Inf,dim(data)[1])
+  data$high <- rep(Inf,dim(data)[1])
 
-  data$low[which(data@data$prop_removed >= cprop &
-                   data@data$N_dat < quant_regions[cbind(data@data$region_INLA,year_map_fun(data@data$year_INLA))])] <- as.matrix(data@data[which(data@data$prop_removed >= cprop &
-                                                                                                                                                    data@data$N_dat < quant_regions[cbind(data@data$region_INLA,year_map_fun(data@data$year_INLA))]),
+  data$low[which(data$prop_removed >= cprop &
+                   data$N_dat < quant_regions[cbind(data$region_INLA,year_map_fun(data$year_INLA))])] <- as.matrix(data[which(data$prop_removed >= cprop &
+                                                                                                                                                    data$N_dat < quant_regions[cbind(data$region_INLA,year_map_fun(data$year_INLA))]),
                                                                                                                                             c(paste0('N_it_',species))])[,1]
 
   if(use_upper_bound)
   {
-    data$high[which(data@data$prop_removed >= cprop &
-                      data@data$N_dat < quant_regions[cbind(data@data$region_INLA,year_map_fun(data@data$year_INLA))])] <-
-      data$N_dat[which(data@data$prop_removed >= cprop &
-                         data@data$N_dat < quant_regions[cbind(data@data$region_INLA,year_map_fun(data@data$year_INLA))])] +
-      upper_bound[which(data@data$prop_removed >= cprop &
-                          data@data$N_dat < quant_regions[cbind(data@data$region_INLA,year_map_fun(data@data$year_INLA))])]
+    data$high[which(data$prop_removed >= cprop &
+                      data$N_dat < quant_regions[cbind(data$region_INLA,year_map_fun(data$year_INLA))])] <-
+      data$N_dat[which(data$prop_removed >= cprop &
+                         data$N_dat < quant_regions[cbind(data$region_INLA,year_map_fun(data$year_INLA))])] +
+      upper_bound[which(data$prop_removed >= cprop &
+                          data$N_dat < quant_regions[cbind(data$region_INLA,year_map_fun(data$year_INLA))])]
   }
 
   MDAT <- INLA::inla.mdata(cbind(data$N_dat,
@@ -188,13 +188,15 @@ spatiotemp_censored_index_fun <- function(data, survey_boundaries, species, M=10
     #f(year, model="ar1", replicate=region_INLA)')
 
   }
+  # remove geometry features from data
+  data <- sf::st_drop_geometry(data)
 
-  ind_var <- which(names(data@data) %in% c('low','high','N_dat'))
+  ind_var <- which(names(data) %in% c('low','high','N_dat'))
 
   stk <- INLA::inla.stack(
-    data = data@data[,ind_var],
+    data = data[,ind_var],
     A = list(A_t, A_s, A_st, 1, 1),
-    effects = list(t_index, s_index, st_index, data@data[,-ind_var], Intercept=rep(1, times=dim(data)[1])),
+    effects = list(t_index, s_index, st_index, data[,-ind_var], Intercept=rep(1, times=dim(data)[1])),
     remove.unused = F)
 
   mod <- tryCatch(
@@ -220,14 +222,20 @@ spatiotemp_censored_index_fun <- function(data, survey_boundaries, species, M=10
     }
   )
 
+  if(!is.null(mod) & mod$misc$mode.status==1000)
+  {
+    print('Numerical approximation not sufficiently accurate - refitting model at previous mode')
+    mod <- inla.rerun(mod)
+  }
+
   pred_df<-NULL
   trajectory_samples <- NULL
   index_plot <- NULL
   trajectory_plot <- NULL
 
-  if(!is.null(mod) & !is.nan(mod$dic$dic) & mod$misc$mode.status==0)
+  if(!is.null(mod) & !is.nan(mod$dic$dic) & mod$misc$mode.status!=1000)
   {
-    df_tmp <- inlabru::cprod(data.frame(year=(c(1:nyear_INLA))),cbind(pixels@data, x=pixels$x, y=pixels$y))
+    df_tmp <- inlabru::cprod(data.frame(year=(c(1:nyear_INLA))),cbind(pixels, data.frame(sf::st_coordinates(pixels))))
 
     if(seed==0)
     {
@@ -256,7 +264,7 @@ spatiotemp_censored_index_fun <- function(data, survey_boundaries, species, M=10
     if(spatiotemporal)
     {
       # Add spatiotemporal GRF
-      A_pred_st <- INLA::inla.spde.make.A(mesh, loc = cbind(df_tmp$x,df_tmp$y),
+      A_pred_st <- INLA::inla.spde.make.A(mesh, loc = cbind(df_tmp$X,df_tmp$Y),
                                     group = df_tmp$year, group.mesh = tmesh)
       pred_df2 <- pred_df2 +
         A_pred_st %*% INLA::inla.posterior.sample.eval(
@@ -282,10 +290,10 @@ spatiotemp_censored_index_fun <- function(data, survey_boundaries, species, M=10
     # update the standard deviation column to avoid mesh aliasing
     pred_df_plot$sd <- as.numeric(sqrt((A_pred_st %*% mod$summary.random$spacetimeind$sd^2) +
                        (A_pred_t %*% mod$summary.random$yearind$sd^2)))
-    pred_df_plot <- sp::SpatialPixelsDataFrame(
-      points = cbind(pred_df_plot$x,pred_df_plot$y),
-      data=pred_df_plot,
-      proj4string = data@proj4string
+    pred_df_plot <- sf::st_as_sf(
+      pred_df_plot,
+      coords=c('x','y'),
+      crs = sf::st_crs(data)
     )
     pred_df_plot$year <- pred_df_plot$year + min_year - 1
 
@@ -343,7 +351,7 @@ spatiotemp_censored_index_fun <- function(data, survey_boundaries, species, M=10
 
         data.frame(
           inlabru::cprod(
-                data.frame(region=levels(survey_boundaries@data$Region)),
+                data.frame(region=levels(survey_boundaries$Region)),
                 data.frame(year=rep(c(min_year:max_year),times=n_trajectories))
                 ),
           MC_ind = rep(1:n_trajectories, each=nyear_INLA*nregion),

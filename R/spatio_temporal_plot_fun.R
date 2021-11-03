@@ -15,7 +15,7 @@ spatio_temporal_plot_fun <- function(
 )
 {
   plot <-
-    ggplot2::ggplot() + inlabru::gg(pred_df_plot[which(pred_df_plot$year==year), c(variable)]) + inlabru::gg(hires_COAST) + colsc(as.numeric(pred_df_plot[which(pred_df_plot$year==year), c(variable)]))
+    ggplot2::ggplot() + inlabru::gg(sf::as_Spatial(pred_df_plot)[which(pred_df_plot$year==year), c(variable)]) + inlabru::gg(hires_COAST) + colsc(as.numeric(pred_df_plot[which(pred_df_plot$year==year), c(variable)]))
   if(plot_figure)
   {
     print(plot)

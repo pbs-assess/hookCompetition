@@ -36,12 +36,12 @@ bootstrap_index_fun_run <- function(
     species_boot[[j]] <- bootstrap_index_fun(data=data[which(!is.na(data$region_INLA)),], species=i, R=R, ICR_adjust=ICR_adjust, ncpus = ncpus, type=type, return=return, plot=plot)
     #species_boot[[j]] <- traditional_index_fun(data=data[which(!is.na(data$region_INLA)),], species=i, R=R, ncpus = ncpus, type=type, return=return, plot=plot)
     #species_boot_subregions[[j]] <-  vector('list', length(survey_boundaries))
-    for(k in 1:length(survey_boundaries))
+    for(k in 1:dim(survey_boundaries)[1])
     {
       species_boot[[j]] <- rbind(
         species_boot[[j]],
         bootstrap_index_fun(data=data[which(data$region_INLA==k),],
-                            species=i, ICR_adjust=ICR_adjust, R=R, ncpus = ncpus, type=type, return=return, plot=plot, subregion = survey_boundaries[k,]@polygons[[1]]@ID, preserve_inter_regional_differences = preserve_inter_regional_differences)
+                            species=i, ICR_adjust=ICR_adjust, R=R, ncpus = ncpus, type=type, return=return, plot=plot, subregion = as.character(survey_boundaries$Region)[k], preserve_inter_regional_differences = preserve_inter_regional_differences)
       )
 
       # species_boot_subregions[[j]][[k]] <-

@@ -28,7 +28,9 @@
 #' @import stats
 censored_index_fun <- function(data, survey_boundaries, species, M=1000, return=T, ICR_adjust=F, cprop=1.1, nthreads=1, keep=F, use_upper_bound=FALSE, upper_bound_quantile=1, plot=T, allyears=F, station_effects=T, prior_event=HT.prior(), prior_station=HT.prior(), init_vals = NULL, n_knots=8, seed=0, verbose=F, n_trajectories=10, preserve_inter_regional_differences=F)
 {
-  data$N_dat <- as.matrix(data@data[,c(paste0('N_it_',species))])[,1]
+  # remove geometry features from data
+  data <- sf::st_drop_geometry(data)
+  data$N_dat <- as.matrix(data[,c(paste0('N_it_',species))])[,1]
   # filter out NAs
   data <- data[which(!is.na(data$N_dat) & !is.na(data$effSkateIPHC) & !is.na(data$region_INLA) & !is.na(data$prop_removed)),]
 
@@ -75,8 +77,8 @@ censored_index_fun <- function(data, survey_boundaries, species, M=1000, return=
     {
       quant_regions <-
         matrix( rep(
-          as.numeric(by(data@data$N_dat,
-                        data@data$region_INLA,
+          as.numeric(by(data$N_dat,
+                        data$region_INLA,
                         FUN = function(x){quantile(x,upper_bound_quantile, na.rm=T)}, simplify = T)),
           times=nyear),
           nrow=nregion, ncol=nyear)
@@ -84,41 +86,41 @@ censored_index_fun <- function(data, survey_boundaries, species, M=1000, return=
     if(!allyears)
     {
       quant_regions <-
-        matrix(by(data@data$N_dat,
-                  list(data@data$region_INLA,data@data$year_INLA),
+        matrix(by(data$N_dat,
+                  list(data$region_INLA,data$year_INLA),
                   FUN = function(x){quantile(x,upper_bound_quantile, na.rm=T)}, simplify = T), nrow=nregion, ncol=nyear)
     }
   }
 
-  upper_bound <- rep(0, length(data@data$prop_removed))
+  upper_bound <- rep(0, length(data$prop_removed))
   if(use_upper_bound)
   {
-    scale_fac <- rep(0, length(data@data$prop_removed))
-    scale_fac[data@data$prop_removed>cprop] <-
-      comp_factor_fun(signif((data@data[data@data$prop_removed>cprop,]$prop_removed-cprop)/(1-cprop),5),
-                      round((1-cprop)*data$obsHooksPerSet[data@data$prop_removed>cprop]))
+    scale_fac <- rep(0, length(data$prop_removed))
+    scale_fac[data$prop_removed>cprop] <-
+      comp_factor_fun(signif((data[data$prop_removed>cprop,]$prop_removed-cprop)/(1-cprop),5),
+                      round((1-cprop)*data$obsHooksPerSet[data$prop_removed>cprop]))
 
-    upper_bound[data@data$prop_removed>cprop] <- round(
-      (data@data$prop_removed[data@data$prop_removed>cprop]-cprop)*data$obsHooksPerSet[data@data$prop_removed>cprop]*
-        scale_fac[data@data$prop_removed>cprop])
+    upper_bound[data$prop_removed>cprop] <- round(
+      (data$prop_removed[data$prop_removed>cprop]-cprop)*data$obsHooksPerSet[data$prop_removed>cprop]*
+        scale_fac[data$prop_removed>cprop])
   }
 
-  data$low <- rep(Inf,dim(data@data)[1])
-  data$high <- rep(Inf,dim(data@data)[1])
+  data$low <- rep(Inf,dim(data)[1])
+  data$high <- rep(Inf,dim(data)[1])
 
-  data$low[which(data@data$prop_removed >= cprop &
-                   data@data$N_dat < quant_regions[cbind(data@data$region_INLA,year_map_fun(data@data$year_INLA))])] <- as.matrix(data@data[which(data@data$prop_removed >= cprop &
-                                                                                                                                                    data@data$N_dat < quant_regions[cbind(data@data$region_INLA,year_map_fun(data@data$year_INLA))]),
+  data$low[which(data$prop_removed >= cprop &
+                   data$N_dat < quant_regions[cbind(data$region_INLA,year_map_fun(data$year_INLA))])] <- as.matrix(data[which(data$prop_removed >= cprop &
+                                                                                                                                                    data$N_dat < quant_regions[cbind(data$region_INLA,year_map_fun(data$year_INLA))]),
                                                                                                                                             c(paste0('N_it_',species))])[,1]
 
   if(use_upper_bound)
   {
-    data$high[which(data@data$prop_removed >= cprop &
-                      data@data$N_dat < quant_regions[cbind(data@data$region_INLA,year_map_fun(data@data$year_INLA))])] <-
-      data$N_dat[which(data@data$prop_removed >= cprop &
-                         data@data$N_dat < quant_regions[cbind(data@data$region_INLA,year_map_fun(data@data$year_INLA))])] +
-      upper_bound[which(data@data$prop_removed >= cprop &
-                          data@data$N_dat < quant_regions[cbind(data@data$region_INLA,year_map_fun(data@data$year_INLA))])]
+    data$high[which(data$prop_removed >= cprop &
+                      data$N_dat < quant_regions[cbind(data$region_INLA,year_map_fun(data$year_INLA))])] <-
+      data$N_dat[which(data$prop_removed >= cprop &
+                         data$N_dat < quant_regions[cbind(data$region_INLA,year_map_fun(data$year_INLA))])] +
+      upper_bound[which(data$prop_removed >= cprop &
+                          data$N_dat < quant_regions[cbind(data$region_INLA,year_map_fun(data$year_INLA))])]
   }
 
   MDAT <- INLA::inla.mdata(cbind(data$N_dat,
@@ -149,12 +151,12 @@ censored_index_fun <- function(data, survey_boundaries, species, M=1000, return=
 
   }
 
-  ind_var <- which(names(data@data) %in% c('low','high','N_dat'))
+  ind_var <- which(names(data) %in% c('low','high','N_dat'))
 
   stk <- INLA::inla.stack(
-    data = data@data[,ind_var],
+    data = data[,ind_var],
     A = list(A_t, 1),
-    effects = list(t_index, data@data[,-ind_var]),
+    effects = list(t_index, data[,-ind_var]),
     remove.unused = F)
 
   # mod <- tryCatch(
@@ -180,14 +182,32 @@ censored_index_fun <- function(data, survey_boundaries, species, M=1000, return=
   #   }
   # )
 
+  if(!is.null(mod) & mod$misc$mode.status==1000)
+  {
+    print('Numerical approximation not sufficiently accurate - refitting model at previous mode')
+    mod <- tryCatch(
+         {
+           inla.rerun(mod)
+         },
+          error=function(cond)
+         {
+              return(NULL)
+         },
+
+          finally={
+
+            }
+          )
+  }
+
   pred_df<-NULL
   trajectory_samples <- NULL
   trajectory_plot <- NULL
   index_plot <- NULL
 
-  if(!is.null(mod) & !is.nan(mod$dic$dic) & mod$misc$mode.status==0)
+  if(!is.null(mod) & !is.nan(mod$dic$dic) & mod$misc$mode.status!=1000)
   {
-      df_tmp <- inlabru::cprod(data.frame(year=(c(1:nyear_INLA))),data.frame(region_INLA=1:nregion, region_area=as.numeric(rgeos::gArea(survey_boundaries, byid = T))))
+      df_tmp <- inlabru::cprod(data.frame(year=(c(1:nyear_INLA))),data.frame(region_INLA=1:nregion, region_area=as.numeric(sf::st_area(survey_boundaries))))
 
       if(seed==0)
       {
@@ -223,7 +243,7 @@ censored_index_fun <- function(data, survey_boundaries, species, M=1000, return=
       pred_df3 = exp(pred_df3)
 
       # Computed coastwide average by scaling each regional value by the area of the region
-      samples_overall <- apply(pred_df3*(df_tmp$region_area/sum(as.numeric(rgeos::gArea(survey_boundaries, byid = T)))), 2, FUN=function(x){
+      samples_overall <- apply(pred_df3*(df_tmp$region_area/sum(as.numeric(sf::st_area(survey_boundaries)))), 2, FUN=function(x){
         as.numeric(by(x, INDICES = factor(df_tmp$year), FUN=sum))})
 
       # scale by the geometric mean
@@ -245,7 +265,7 @@ censored_index_fun <- function(data, survey_boundaries, species, M=1000, return=
           data.frame(
             inlabru::cprod(data.frame(year=rep(c(min_year:max_year),times=n_trajectories),
                              MC_ind = rep(1:n_trajectories, each=nyear_INLA)),
-                  data.frame(region=levels(survey_boundaries@data$Region))),
+                  data.frame(region=levels(survey_boundaries$Region))),
             mean = as.numeric(trajectory_samples_regions))
         )
 
@@ -254,7 +274,7 @@ censored_index_fun <- function(data, survey_boundaries, species, M=1000, return=
       pred_df <- cbind(year=c(min_year:max_year), weight=1,
                        region='All',bru_summarise(samples_overall))
 
-      pred_df2 <- cbind(inlabru::cprod(data.frame(year=c(min_year:max_year)),data.frame(region=levels(survey_boundaries@data$Region))),
+      pred_df2 <- cbind(inlabru::cprod(data.frame(year=c(min_year:max_year)),data.frame(region=levels(survey_boundaries$Region))),
                         bru_summarise(pred_df2) )
 
       pred_df <- rbind(pred_df, pred_df2)

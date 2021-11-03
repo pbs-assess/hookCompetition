@@ -17,8 +17,10 @@ knitr::opts_chunk$set(fig.width=12, fig.height=8)
 
 ```{r setup}
 library(hookcompetition)
-library(sp)
+library(gfiphc)
+library(sf)
 library(inlabru)
+library(ggpolypath)
 ```
 
 ```{r loadhiddenfunctions, include=F, echo=F}
@@ -221,7 +223,7 @@ spatial_obj <- make_spatial_objects(
 list2env(spatial_obj, globalenv())
 rm(spatial_obj)
 
-ggplot2::ggplot() + inlabru::gg(mesh) + inlabru::gg(Reduced_data_sp)
+ggplot2::ggplot() + inlabru::gg(mesh) + inlabru::gg(as_Spatial(Reduced_data_sp))
 
 ```
 
@@ -342,9 +344,9 @@ spatio_temporal_plot_fun(
 ```
 
 ```{r plotprecompiledspatiotemp, echo=FALSE, message=FALSE, warning=FALSE, cache=FALSE}
-ggplot2::ggplot() + inlabru::gg(spatio_temporal_CPUE_plotdf[which(spatio_temporal_CPUE_plotdf$year==2000), c('mean')]) + inlabru::gg(Coast_hires) + colsc(as.matrix(spatio_temporal_CPUE_plotdf[which(spatio_temporal_CPUE_plotdf$year==2000), c('mean')])) + ggplot2::ggtitle('CPUE-based yelloweye abundance in year 2000')
+ggplot2::ggplot() + inlabru::gg(spatio_temporal_CPUE_plotdf[which(spatio_temporal_CPUE_plotdf$year==2000), c('mean')]) + inlabru::gg(sf::as_Spatial(Coast_hires)) + colsc(as.matrix(spatio_temporal_CPUE_plotdf[which(spatio_temporal_CPUE_plotdf$year==2000), c('mean')])) + ggplot2::ggtitle('CPUE-based yelloweye abundance in year 2000')
 
-ggplot2::ggplot() + inlabru::gg(spatio_temporal_ICR_plotdf[which(spatio_temporal_ICR_plotdf$year==2000), c('mean')]) + inlabru::gg(Coast_hires) + colsc(as.matrix(spatio_temporal_ICR_plotdf[which(spatio_temporal_ICR_plotdf$year==2000), c('mean')])) + ggplot2::ggtitle('ICR-based yelloweye abundance in year 2000')
+ggplot2::ggplot() + inlabru::gg(spatio_temporal_ICR_plotdf[which(spatio_temporal_ICR_plotdf$year==2000), c('mean')]) + inlabru::gg(sf::as_Spatial(Coast_hires)) + colsc(as.matrix(spatio_temporal_ICR_plotdf[which(spatio_temporal_ICR_plotdf$year==2000), c('mean')])) + ggplot2::ggtitle('ICR-based yelloweye abundance in year 2000')
 
-ggplot2::ggplot() + inlabru::gg(spatio_temporal_censored_plotdf[which(spatio_temporal_censored_plotdf$year==2000), c('mean')]) + inlabru::gg(Coast_hires) + colsc(as.matrix(spatio_temporal_censored_plotdf[which(spatio_temporal_censored_plotdf$year==2000), c('mean')])) + ggplot2::ggtitle('Censored Poisson yelloweye abundance in year 2000',subtitle = 'Censorship defined as 95% or more baits removed \nCensorship removed from upper 10% of values each year')
+ggplot2::ggplot() + inlabru::gg(spatio_temporal_censored_plotdf[which(spatio_temporal_censored_plotdf$year==2000), c('mean')]) + inlabru::gg(sf::as_Spatial(Coast_hires)) + colsc(as.matrix(spatio_temporal_censored_plotdf[which(spatio_temporal_censored_plotdf$year==2000), c('mean')])) + ggplot2::ggtitle('Censored Poisson yelloweye abundance in year 2000',subtitle = 'Censorship defined as 95% or more baits removed \nCensorship removed from upper 10% of values each year')
 ```

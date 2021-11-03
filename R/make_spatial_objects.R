@@ -23,12 +23,12 @@ make_spatial_objects <- function(data, survey_boundaries=NULL, mesh_coast=NULL, 
   # prior_sigma What value of standard deviation to we want to specify for Gaussian random fields?
   # prior_sigma_prob What is the prior probability that the SD will be greater than the specified SD?
 
-  KM_CRS <- data@proj4string
+  KM_CRS <- sf::st_crs(data)
 
   # Load the simplified shapefile of the coastline and plot
   if(is.null(mesh_coast))
   {
-    Coast_simp <- hookcompetition::Coast_simp
+    Coast_simp <- sf::st_as_sf(hookcompetition::Coast_simp)
     # Coast_simp <- sp::spTransform(Coast_simp,KM_CRS)
     # Coast_simp <- sp::SpatialPolygons(
     #   Srl=lapply(Coast_simp@polygons[[1]]@Polygons,
@@ -47,14 +47,14 @@ make_spatial_objects <- function(data, survey_boundaries=NULL, mesh_coast=NULL, 
     # Coast_hires <- hookcompetition::Coast_hires
     # Coast_hires <- sp::spTransform(Coast_hires, KM_CRS)
     # Coast_hires <- rgeos::gSimplify(Coast_hires, 0.4)
-    Coast_hires <- hookcompetition::Coastline
+    Coast_hires <- sf::st_as_sf(hookcompetition::Coastline)
   }
 
   #Now we define the computational mesh used to approximate the Gaussian random field. Next, we identify the indices of the triangles that lie on land. These indices will be used for implementing the barrier model.
 
   # define mesh
-  mesh <- INLA::inla.mesh.2d(loc=data@coords,
-                       interior = mesh_coast[1],
+  mesh <- INLA::inla.mesh.2d(loc=sf::st_coordinates(data),
+                       interior = sf::as_Spatial(mesh_coast[1,]),
                        max.edge = c(80),
                        min.angle = 21,
                        cutoff = c(20),
@@ -64,16 +64,17 @@ make_spatial_objects <- function(data, survey_boundaries=NULL, mesh_coast=NULL, 
 
   # Define the barrier model around polygons 4 and 9 (Vancouver Island and Haida Gwaii)
   # which triangle vertices are on land?
-  tl = length(mesh$graph$tv[,1])
-  # - the number of triangles in the mesh
-  posTri = matrix(0, tl, 2)
-  for (t in 1:tl){
-    temp = mesh$loc[mesh$graph$tv[t, ], ]
-    posTri[t,] = colMeans(temp)[c(1,2)]
-  }
-  posTri = sp::SpatialPoints(posTri, proj4string = KM_CRS)
-
-  triangle_ind <- unlist(sp::over(mesh_coast[-1], posTri, returnList=T))
+  # tl = length(mesh$graph$tv[,1])
+  # # - the number of triangles in the mesh
+  # posTri = matrix(0, tl, 2)
+  # for (t in 1:tl){
+  #   temp = mesh$loc[mesh$graph$tv[t, ], ]
+  #   posTri[t,] = colMeans(temp)[c(1,2)]
+  # }
+  # posTri = sp::SpatialPoints(posTri, proj4string = KM_CRS)
+  #
+  # triangle_ind <- unlist(sp::over(mesh_coast[-1], posTri, returnList=T))
+  triangle_ind <- NULL
 
   #Next, we define the barrier spde model using the function `inla.barrier.pcmatern()`. This defines an R-generic model that can now be handles in *inlabru* through the use of the `bru_mapper()` function. Then, for the purposes of exploratory analysis, we define a final count variable 'Other'. This will store the counts of caught fish other species.
 
@@ -90,20 +91,24 @@ make_spatial_objects <- function(data, survey_boundaries=NULL, mesh_coast=NULL, 
     prior.range = c(prior_range, prior_range_prob),
     prior.sigma = c(prior_sigma, prior_sigma_prob),
   )
-  predict_pixels <- inlabru::pixels(mesh, mask=survey_boundaries)
+  predict_pixels <- sf::st_as_sf(pixels_sf(mesh, mask=survey_boundaries))
   # extract centroids of the pixels
-  predict_points <-
-    sp::SpatialPoints(
-      coords = predict_pixels@coords,
-      proj4string = predict_pixels@proj4string
-    )
+  # predict_points <-
+  #   sp::SpatialPoints(
+  #     coords = predict_pixels@coords,
+  #     proj4string = predict_pixels@proj4string
+  #   )
 
   predict_pixels$region_INLA <-
-    as.numeric(rgeos::gWithin(predict_points,
-                       survey_boundaries,
-                       byid=T, returnDense=F))
+  sapply(sf::st_intersects(predict_pixels, survey_boundaries),
+         function(z){ifelse(length(z)==0,NA_integer_,z[1])})
+
+  # predict_pixels$region_INLA <-
+  #   as.numeric(rgeos::gWithin(predict_points,
+  #                      survey_boundaries,
+  #                      byid=T, returnDense=F))
   predict_pixels$region_area <-
-    as.numeric(rgeos::gArea(survey_boundaries, byid = T))[
+    as.numeric(sf::st_area(survey_boundaries, byid = T))[
       predict_pixels$region_INLA
     ]
 

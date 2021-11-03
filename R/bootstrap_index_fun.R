@@ -7,7 +7,7 @@ bootstrap_index_fun <- function(data, species, ICR_adjust=F, R=1000, return=F, n
     if(preserve_inter_regional_differences)
     {
       rel_boot_species_ind <-
-        boot::boot(data@data[complete.cases(data@data$prop_removed),],
+        boot::boot(data[complete.cases(data$prop_removed),],
              statistic = function(x,ind){
                ind_est <-
                  as.numeric(by(x[ind,],x$year[ind],
@@ -16,13 +16,13 @@ bootstrap_index_fun <- function(data, species, ICR_adjust=F, R=1000, return=F, n
                                         comp_factor_fun(z$prop_removed,z$obsHooksPerSet), na.rm=T)
                                }))
              },
-             R=R, strata=data@data[complete.cases(data@data$prop_removed),]$year,
+             R=R, strata=data[complete.cases(data$prop_removed),]$year,
              parallel = 'multicore', ncpus=ncpus)
     }
     if(!preserve_inter_regional_differences)
     {
       rel_boot_species_ind <-
-        boot::boot(data@data[complete.cases(data@data$prop_removed),],
+        boot::boot(data[complete.cases(data$prop_removed),],
              statistic = function(x,ind){
                ind_est <-
                  as.numeric(by(x[ind,],x$year[ind],
@@ -32,7 +32,7 @@ bootstrap_index_fun <- function(data, species, ICR_adjust=F, R=1000, return=F, n
                                }))
                ind_est <- ind_est / gm_mean(ind_est)
              },
-             R=R, strata=data@data[complete.cases(data@data$prop_removed),]$year,
+             R=R, strata=data[complete.cases(data$prop_removed),]$year,
              parallel = 'multicore', ncpus=ncpus)
     }
   }
@@ -41,7 +41,7 @@ bootstrap_index_fun <- function(data, species, ICR_adjust=F, R=1000, return=F, n
     if(preserve_inter_regional_differences)
     {
       rel_boot_species_ind <-
-        boot::boot(data@data,
+        boot::boot(data,
              statistic = function(x,ind){
                ind_est <-
                  as.numeric(by(x[ind,],x$year[ind],
@@ -55,7 +55,7 @@ bootstrap_index_fun <- function(data, species, ICR_adjust=F, R=1000, return=F, n
     if(!preserve_inter_regional_differences)
     {
       rel_boot_species_ind <-
-        boot::boot(data@data,
+        boot::boot(data,
              statistic = function(x,ind){
                ind_est <-
                  as.numeric(by(x[ind,],x$year[ind],
@@ -81,7 +81,7 @@ bootstrap_index_fun <- function(data, species, ICR_adjust=F, R=1000, return=F, n
   {
     rel_boot_species_CI[,2] <- subregion
   }
-  rel_boot_species_CI[,1] <- sort(unique(data@data$year),decreasing = F)
+  rel_boot_species_CI[,1] <- sort(unique(data$year),decreasing = F)
 
   for(i in 1:length(rel_boot_species_ind$t0))
   {
@@ -111,7 +111,7 @@ bootstrap_index_fun <- function(data, species, ICR_adjust=F, R=1000, return=F, n
   }
 
   rel_boot_species_CI <- as.data.frame(rel_boot_species_CI)
-  #rel_boot_species_CI$year <- sort(unique(data@data$year),decreasing = F)#c(1996:2011,2013:2019)
+  #rel_boot_species_CI$year <- sort(unique(data$year),decreasing = F)#c(1996:2011,2013:2019)
   #rel_boot_species_CI[rel_boot_species_CI$year==2005,1:4] <- 1
 
   # if(plot)

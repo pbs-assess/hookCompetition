@@ -78,3 +78,36 @@ expand_to_dataframe <- function (x, data = NULL)
   }
   result
 }
+
+pixels_sf <- function(mesh, nx = 150, ny = 150, mask = TRUE)
+{
+  if (length(nx) == 1) {
+    x <- seq(min(mesh$loc[, 1]), max(mesh$loc[, 1]), length = nx)
+  }
+  else {
+    x <- nx
+  }
+  if (length(ny) == 1) {
+    y <- seq(min(mesh$loc[, 2]), max(mesh$loc[, 2]), length = ny)
+  }
+  else {
+    y <- ny
+  }
+  pixels <- sf::st_as_sf(
+    expand.grid(x = x, y = y),
+    coords=c('x','y')
+  )
+  if (!is.null(mesh$crs)) {
+    sf::st_crs(pixels) <- sf::st_crs(mesh$crs)
+  }
+  if (is.logical(mask)) {
+    if (mask) {
+      pixels <- pixels[is.inside(mesh, sf::as_Spatial(pixels))]
+    }
+  }
+  if(inherits(mask, "sf")){
+    browser()
+      pixels <- pixels[sapply(sf::st_intersects(pixels, mask),function(z){ifelse(length(z)==0,F,T)}),]
+  }
+  return(pixels)
+}

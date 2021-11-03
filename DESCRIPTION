@@ -13,6 +13,7 @@ Depends:
     stats (>= 4.0.2)
 Imports: 
     rgdal (>= 1.5.23),
+    sf,
     sp (>= 1.4.5),
     maptools (>= 1.1.1),
     inlabru (>= 2.2.8.9000),
@@ -20,6 +21,7 @@ Imports:
     rgeos (>= 0.5.5),
     spdep (>= 1.1.5),
     ggplot2 (>= 3.3.5),
+    ggpolypath (>= 0.1.0),
     dplyr (>= 1.0.2),
     mgcv (>= 1.8.31),
     GGally (>= 2.1.0),
