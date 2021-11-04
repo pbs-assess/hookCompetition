@@ -38,7 +38,6 @@ This markdown document will outline the steps needed to use the hookCompetition 
 # Step 1 - Setting the initial values.
 
 ```{r loadpackage}
-#library(hookCompetition)
 # Set the number of cores to use to generate the vignette
 n_cores <- 1
 # Set the number of samples to use for bootstrapping for Monte Carlo approximations to posterior quantities. Should be set much higher for real applications!
