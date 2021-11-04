@@ -28,7 +28,7 @@ make_spatial_objects <- function(data, survey_boundaries=NULL, mesh_coast=NULL, 
   # Load the simplified shapefile of the coastline and plot
   if(is.null(mesh_coast))
   {
-    Coast_simp <- sf::st_as_sf(hookcompetition::Coast_simp)
+    Coast_simp <- sf::st_as_sf(hookCompetition::Coast_simp)
     # Coast_simp <- sp::spTransform(Coast_simp,KM_CRS)
     # Coast_simp <- sp::SpatialPolygons(
     #   Srl=lapply(Coast_simp@polygons[[1]]@Polygons,
@@ -44,10 +44,10 @@ make_spatial_objects <- function(data, survey_boundaries=NULL, mesh_coast=NULL, 
   if(is.null(hires_coast))
   {
     # Load the hi-resolution coastline
-    # Coast_hires <- hookcompetition::Coast_hires
+    # Coast_hires <- hookCompetition::Coast_hires
     # Coast_hires <- sp::spTransform(Coast_hires, KM_CRS)
     # Coast_hires <- rgeos::gSimplify(Coast_hires, 0.4)
-    Coast_hires <- sf::st_as_sf(hookcompetition::Coastline)
+    Coast_hires <- sf::st_as_sf(hookCompetition::Coastline)
   }
 
   #Now we define the computational mesh used to approximate the Gaussian random field. Next, we identify the indices of the triangles that lie on land. These indices will be used for implementing the barrier model.
