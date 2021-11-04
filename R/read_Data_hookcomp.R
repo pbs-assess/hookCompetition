@@ -104,7 +104,7 @@ read_Data_hookcomp <- function(species_vec='yelloweye rockfish', at_PBS=F,
     },
     error=function(cond)
     {
-      return((hookcompetition::hook_with_bait)$set_counts)
+      return((hookCompetition::hook_with_bait)$set_counts)
     },
     finally={
 
@@ -122,7 +122,7 @@ read_Data_hookcomp <- function(species_vec='yelloweye rockfish', at_PBS=F,
     },
     error=function(cond)
     {
-      return(hookcompetition::sets_other_years)
+      return(hookCompetition::sets_other_years)
     },
     finally={
 
@@ -135,7 +135,7 @@ read_Data_hookcomp <- function(species_vec='yelloweye rockfish', at_PBS=F,
   #   },
   #   error=function(cond)
   #   {
-  #     return(hookcompetition::`skates-other-years`)
+  #     return(hookCompetition::`skates-other-years`)
   #   },
   #   finally={
   #
@@ -155,7 +155,7 @@ read_Data_hookcomp <- function(species_vec='yelloweye rockfish', at_PBS=F,
       {
         if(species_vec[i] == 'yelloweye rockfish' & at_PBS == F)
         {
-          return((hookcompetition::yelloweye_rockfish)$set_counts)
+          return((hookCompetition::yelloweye_rockfish)$set_counts)
         }
         if(species_vec[i] != 'yelloweye rockfish' | at_PBS == T)
         {
@@ -255,7 +255,7 @@ read_Data_hookcomp <- function(species_vec='yelloweye rockfish', at_PBS=F,
   {
     survey_boundaries <-
       sf::st_as_sf(
-      hookcompetition::survey_boundaries
+      hookCompetition::survey_boundaries
       )
 
     # survey_boundaries <- sp::SpatialPolygons(

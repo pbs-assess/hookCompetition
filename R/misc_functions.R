@@ -102,7 +102,7 @@ pixels_sf <- function(mesh, nx = 150, ny = 150, mask = TRUE)
   }
   if (is.logical(mask)) {
     if (mask) {
-      pixels <- pixels[is.inside(mesh, sf::as_Spatial(pixels))]
+      pixels <- pixels[inlabru::is.inside(mesh, sf::as_Spatial(pixels))]
     }
   }
   if(inherits(mask, "sf")){

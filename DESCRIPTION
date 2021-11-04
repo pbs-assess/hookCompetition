@@ -1,4 +1,4 @@
-Package: hookcompetition
+Package: hookCompetition
 Type: Package
 Title: An R package for estimating relative abundance indices from longline data using a censored likelihood approach
 Version: 0.1.0
@@ -34,7 +34,7 @@ Imports:
     gfiphc (>= 0.0.0.9000),
     rlang (>= 0.4.11),
     Matrix
-RoxygenNote: 7.1.1
+RoxygenNote: 7.1.2
 Remotes: github::pbs-assess/gfiphc
 Suggests: 
     rmarkdown,
