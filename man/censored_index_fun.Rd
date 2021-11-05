@@ -2,7 +2,8 @@
 % Please edit documentation in R/censored_index_fun.R
 \name{censored_index_fun}
 \alias{censored_index_fun}
-\title{Compute Poisson-lognormal model-based indices of relative abundance}
+\title{Compute Poisson-lognormal model-based indices of relative abundance
+ See the vignette for details}
 \usage{
 censored_index_fun(
   data,
@@ -30,9 +31,9 @@ censored_index_fun(
 )
 }
 \arguments{
-\item{data}{a SpatialPointsDataFrame object containing the IPHC data}
+\item{data}{a sf points object containing the IPHC data}
 
-\item{survey_boundaries}{a SpatialPolygonsDataFrame object containing the survey boundary definitions}
+\item{survey_boundaries}{a sf polygons object containing the survey boundary definitions}
 
 \item{species}{a character name of the species (linked to the variables `N_it` in the dataframe)}
 
@@ -76,4 +77,5 @@ censored_index_fun(
 }
 \description{
 Compute Poisson-lognormal model-based indices of relative abundance
+ See the vignette for details
 }

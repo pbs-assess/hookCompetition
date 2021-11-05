@@ -2,10 +2,11 @@
 % Please edit documentation in R/bootstrap_index_fun_run.R
 \name{bootstrap_index_fun_run}
 \alias{bootstrap_index_fun_run}
-\title{Computes Regional and Coastwide Bootstrapped Relative Abundance Indices}
+\title{Computes Regional and Coastwide Bootstrapped Relative Abundance Indices
+See the vignette for details}
 \usage{
 bootstrap_index_fun_run(
-  species_vec,
+  species,
   survey_boundaries,
   ICR_adjust = F,
   data,
@@ -18,13 +19,13 @@ bootstrap_index_fun_run(
 )
 }
 \arguments{
-\item{species_vec}{a character vector of all the species (linked to the variables `N_it` in the dataframe)}
+\item{species}{a character of the species (linked to the variables `N_it` in the dataframe)}
 
-\item{survey_boundaries}{a SpatialPolygonsDataFrame object containing the survey boundary definitions}
+\item{survey_boundaries}{a sf polygons object containing the survey boundary definitions}
 
 \item{ICR_adjust}{if FALSE/TRUE it computes a CPUE-based/instantaneous catch rate-adjusted index}
 
-\item{data}{a SpatialPointsDataFrame object containing the IPHC data}
+\item{data}{a sf points object containing the IPHC data}
 
 \item{R}{specifies the number of bootstrap samples desired}
 
@@ -40,4 +41,5 @@ bootstrap_index_fun_run(
 }
 \description{
 Computes Regional and Coastwide Bootstrapped Relative Abundance Indices
+See the vignette for details
 }

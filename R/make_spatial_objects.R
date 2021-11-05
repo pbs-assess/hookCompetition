@@ -1,22 +1,23 @@
 #' load the R objects required for fitting spatio-temporal models.
 #' These include: a delauney triangulation mesh for computing the GMRF
-#' approximation to the SPDE (cite Lindgren) within r-INLA (cite Rue);
+#' approximation to the SPDE (Lindgren et al 2011) within r-INLA (Rue et al 2005);
 #' an INLA spde object with user-specified pc priors specified on the range and
-#' standard deviation parameters. Note that the spde object is a barrier model
-#' (cite Bakka) which accounts for land as a barrier.
+#' standard deviation parameters.
 #'
-#' @param data a SpatialPointsDataFrame object containing the IPHC data
-#' @param survey_boundaries a SpatialPolygonsDataFrame object containing the survey boundary definitions
-#' @param mesh_coast a simplified (smoothed) SpatialPolygonsDataFrame object over which the triangulation mesh will be created. If NULL, a simplified shapefile of BC Coastline will be returned.
-#' @param hires_coast a high-resolition SpatialPolygonsDataFrame object used for plotting. If NULL, a default BC coastline object will be returned.
-#' @param prior_range Choose a value in kilometres such that the species density at two locations separated by distances greater than this will be `approximately' independent (typically a lower bound is chosen).
+#' @param data a sf points object containing the IPHC data
+#' @param survey_boundaries a sf polygons object containing the survey boundary definitions
+#' @param mesh_coast a simplified (smoothed) sf polygons object over which the triangulation mesh will be created. If NULL, a simplified shapefile of BC Coastline will be returned.
+#' @param hires_coast a high-resolution sf polygons object used for plotting. If NULL, a default BC coastline object will be returned.
+#' @param prior_range Choose a value in kilometers such that the species density at two locations separated by distances greater than this will be `approximately' independent (typically a lower bound is chosen).
 #' @param prior_range_prob What is you prior probability that the spatial range will be smaller than this value (typically a small probability)?
 #' @param prior_sigma Choose a value for the marginal standard deviation of the random field. Typically an upper bound is used. Remember our linear predictor is on the log scale, so think about constraining exp(+- 2*SD) in terms of multiplicative regional differences.
 #' @param prior_sigma_prob What is your prior probability that the true marginal standard deviation exceeds this?
+#' @param nx How many columns of pixels to place over the survey_boundaries for plotting? Default 150, higher means smoother plots, but longer run times.
+#' @param ny How many rows of pixels to place over the survey_boundaries for plotting? Default 150, higher means smoother plots, but longer run times.
 #' @export
 #' @importFrom magrittr %>%
 #' @import stats
-make_spatial_objects <- function(data, survey_boundaries=NULL, mesh_coast=NULL, hires_coast=NULL, prior_range=20, prior_range_prob=0.01, prior_sigma=2, prior_sigma_prob=0.01)
+make_spatial_objects <- function(data, survey_boundaries=NULL, mesh_coast=NULL, hires_coast=NULL, prior_range=20, prior_range_prob=0.01, prior_sigma=2, prior_sigma_prob=0.01, nx = 150, ny = 150)
 {
   # prior_range What value of range do we want to specify (in kilometres) for Gaussian random fields
   # prior_range_prob What is the prior probability that the range will be less than the specified range?
@@ -91,7 +92,7 @@ make_spatial_objects <- function(data, survey_boundaries=NULL, mesh_coast=NULL, 
     prior.range = c(prior_range, prior_range_prob),
     prior.sigma = c(prior_sigma, prior_sigma_prob),
   )
-  predict_pixels <- sf::st_as_sf(pixels_sf(mesh, mask=survey_boundaries))
+  predict_pixels <- sf::st_as_sf(pixels_sf(mesh, mask=survey_boundaries, nx=nx, ny=ny))
   # extract centroids of the pixels
   # predict_points <-
   #   sp::SpatialPoints(

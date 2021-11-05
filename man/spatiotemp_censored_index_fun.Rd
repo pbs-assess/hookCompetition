@@ -2,7 +2,8 @@
 % Please edit documentation in R/spatiotemp_censored_index_fun.R
 \name{spatiotemp_censored_index_fun}
 \alias{spatiotemp_censored_index_fun}
-\title{Fit spatio-temporal indices using the GMRF-SPDE approximation of lindgren et al 2011}
+\title{Fit spatio-temporal indices using the GMRF-SPDE approximation of lindgren et al 2011
+See the vignette for details}
 \usage{
 spatiotemp_censored_index_fun(
   data,
@@ -35,9 +36,9 @@ spatiotemp_censored_index_fun(
 )
 }
 \arguments{
-\item{data}{a SpatialPointsDataFrame object containing the IPHC data}
+\item{data}{a sf points object containing the IPHC data}
 
-\item{survey_boundaries}{a SpatialPolygonsDataFrame object containing the survey boundary definitions}
+\item{survey_boundaries}{a sf polygons object containing the survey boundary definitions}
 
 \item{species}{a character name of the species (linked to the variables `N_it` in the dataframe)}
 
@@ -83,7 +84,7 @@ spatiotemp_censored_index_fun(
 
 \item{spde}{An INLA inla.spde2 or inla.rgeneric object (e.g. `spde_mod` created in `make_spatial_objects()`)}
 
-\item{pixels}{A SpatialPixelsDataFrame object used for plotting the maps of relative abundance}
+\item{pixels}{A sf points (pixels) object used for plotting the maps of relative abundance}
 
 \item{n_trajectories}{integer specifying how many Monte Carlo sampled relative abundance indices to plot on a spaghetti plot. This can help with interpreting uncertainty. Suggested value 10.}
 
@@ -91,4 +92,5 @@ spatiotemp_censored_index_fun(
 }
 \description{
 Fit spatio-temporal indices using the GMRF-SPDE approximation of lindgren et al 2011
+See the vignette for details
 }

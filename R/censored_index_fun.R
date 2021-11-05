@@ -1,8 +1,9 @@
 #'  Compute Poisson-lognormal model-based indices of relative abundance
+#'  See the vignette for details
 #'
-#' @param data a SpatialPointsDataFrame object containing the IPHC data
+#' @param data a sf points object containing the IPHC data
 #' @param species a character name of the species (linked to the variables `N_it` in the dataframe)
-#' @param survey_boundaries a SpatialPolygonsDataFrame object containing the survey boundary definitions
+#' @param survey_boundaries a sf polygons object containing the survey boundary definitions
 #' @param M the number of independent Monte Carlo samples from the posterior used to compute indices
 #' @param return logical stating whether or not to return indices as a data.frame
 #' @param ICR_adjust A logical determining if the ICR-based scale-factor adjustment should be used
@@ -321,8 +322,8 @@ censored_index_fun <- function(data, survey_boundaries, species, M=1000, return=
     {
       return(list(pred_overdisp=pred_df,
                   trajectory_samples=trajectory_samples,
-                  posterior_mean = sapply(mod$marginals.fitted.values[grepl(rownames(mod$summary.fitted.values), pattern = 'AP')],FUN = function(x){INLA::inla.rmarginal(marginal=x, n=1000)}),
-                  posterior_sample = sapply(mod$marginals.fitted.values[grepl(rownames(mod$summary.fitted.values), pattern = 'AP')],FUN = function(x){rpois(lambda=INLA::inla.rmarginal(marginal=x, n=1000), n=1000)}),
+                  posterior_mean = sapply(mod$marginals.fitted.values[grepl(rownames(mod$summary.fitted.values), pattern = 'AP')],FUN = function(x){INLA::inla.rmarginal(marginal=x, n=M)}),
+                  posterior_sample = sapply(mod$marginals.fitted.values[grepl(rownames(mod$summary.fitted.values), pattern = 'AP')],FUN = function(x){rpois(lambda=INLA::inla.rmarginal(marginal=x, n=M), n=M)}),
                   index_plot = index_plot,
                   trajectory_plot = trajectory_plot,
                   preserve_inter_regional_differences=preserve_inter_regional_differences))#, pred_poisson=pred_df_poisson))
@@ -332,8 +333,8 @@ censored_index_fun <- function(data, survey_boundaries, species, M=1000, return=
       return(list(mod=mod,
                   pred_overdisp=pred_df,
                   trajectory_samples=trajectory_samples,
-                  posterior_mean = sapply(mod$marginals.fitted.values[grepl(rownames(mod$summary.fitted.values), pattern = 'AP')],FUN = function(x){INLA::inla.rmarginal(marginal=x, n=1000)}),
-                  posterior_sample = sapply(mod$marginals.fitted.values[grepl(rownames(mod$summary.fitted.values), pattern = 'AP')],FUN = function(x){rpois(lambda=INLA::inla.rmarginal(marginal=x, n=1000), n=1000)}),
+                  posterior_mean = sapply(mod$marginals.fitted.values[grepl(rownames(mod$summary.fitted.values), pattern = 'AP')],FUN = function(x){INLA::inla.rmarginal(marginal=x, n=M)}),
+                  posterior_sample = sapply(mod$marginals.fitted.values[grepl(rownames(mod$summary.fitted.values), pattern = 'AP')],FUN = function(x){rpois(lambda=INLA::inla.rmarginal(marginal=x, n=M), n=M)}),
                   index_plot = index_plot,
                   trajectory_plot = trajectory_plot,
                   preserve_inter_regional_differences=preserve_inter_regional_differences))#, pred_poisson=pred_df_poisson))

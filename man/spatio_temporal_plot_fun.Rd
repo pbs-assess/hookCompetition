@@ -2,7 +2,8 @@
 % Please edit documentation in R/spatio_temporal_plot_fun.R
 \name{spatio_temporal_plot_fun}
 \alias{spatio_temporal_plot_fun}
-\title{Fit spatio-temporal indices using the GMRF-SPDE approximation of lindgren et al 2011}
+\title{Fit spatio-temporal indices using the GMRF-SPDE approximation of lindgren et al 2011
+See the vignette for details}
 \usage{
 spatio_temporal_plot_fun(
   pred_df_plot,
@@ -14,13 +15,13 @@ spatio_temporal_plot_fun(
 )
 }
 \arguments{
-\item{pred_df_plot}{the SpatialPixelsDataFrame containing spatiotemporal predictions returned by `spatiotemp_censored_index_fun`}
+\item{pred_df_plot}{the sf object containing spatiotemporal predictions returned by `spatiotemp_censored_index_fun`}
 
 \item{year}{integer specifying which year to plot}
 
 \item{variable}{character specifying which variable to plot}
 
-\item{hires_COAST}{a SpatialPolygonsDataFrame specifying the coastline used for plotting}
+\item{hires_COAST}{a sf polygons object specifying the coastline used for plotting}
 
 \item{plot_figure}{logical. Do you want to print the plot?}
 
@@ -28,4 +29,5 @@ spatio_temporal_plot_fun(
 }
 \description{
 Fit spatio-temporal indices using the GMRF-SPDE approximation of lindgren et al 2011
+See the vignette for details
 }

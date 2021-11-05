@@ -1,8 +1,9 @@
 #' Fit spatio-temporal indices using the GMRF-SPDE approximation of lindgren et al 2011
+#' See the vignette for details
 #'
-#' @param data a SpatialPointsDataFrame object containing the IPHC data
+#' @param data a sf points object containing the IPHC data
 #' @param species a character name of the species (linked to the variables `N_it` in the dataframe)
-#' @param survey_boundaries a SpatialPolygonsDataFrame object containing the survey boundary definitions
+#' @param survey_boundaries a sf polygons object containing the survey boundary definitions
 #' @param M the number of independent Monte Carlo samples from the posterior used to compute indices
 #' @param return logical stating whether or not to return indices as a data.frame
 #' @param ICR_adjust A logical determining if the ICR-based scale-factor adjustment should be used
@@ -24,7 +25,7 @@
 #' @param preserve_inter_regional_differences Logical if TRUE estimated inter-regional differences in mean abundance are shown at a cost of higher variance. Does not affect coastwide index.
 #' @param mesh An INLA inla.mesh.2d object (e.g. `mesh` created in `make_spatial_objects()`)
 #' @param spde An INLA inla.spde2 or inla.rgeneric object (e.g. `spde_mod` created in `make_spatial_objects()`)
-#' @param pixels A SpatialPixelsDataFrame object used for plotting the maps of relative abundance
+#' @param pixels A sf points (pixels) object used for plotting the maps of relative abundance
 #' @param covs Currently not implemented. Please let me know if (spatio-temporal) environmental covariate functionality is wanted in a future version.
 #' @param spatiotemporal Logical. Do you want to identify temporal changes in relative abundance uniquely across space? Almost always yes.
 #' @export
@@ -398,8 +399,8 @@ spatiotemp_censored_index_fun <- function(data, survey_boundaries, species, M=10
       return(list(pred_spatiotemp=pred_df,
                   trajectory_samples=trajectory_samples,
                   pred_df_plot=pred_df_plot,
-                  posterior_mean = sapply(mod$marginals.fitted.values[grepl(rownames(mod$summary.fitted.values), pattern = 'AP')],FUN = function(x){INLA::inla.rmarginal(marginal=x, n=1000)}),
-                  posterior_sample = sapply(mod$marginals.fitted.values[grepl(rownames(mod$summary.fitted.values), pattern = 'AP')],FUN = function(x){rpois(lambda=INLA::inla.rmarginal(marginal=x, n=1000), n=1000)}),
+                  posterior_mean = sapply(mod$marginals.fitted.values[grepl(rownames(mod$summary.fitted.values), pattern = 'AP')],FUN = function(x){INLA::inla.rmarginal(marginal=x, n=M)}),
+                  posterior_sample = sapply(mod$marginals.fitted.values[grepl(rownames(mod$summary.fitted.values), pattern = 'AP')],FUN = function(x){rpois(lambda=INLA::inla.rmarginal(marginal=x, n=M), n=M)}),
                   index_plot = index_plot,
                   trajectory_plot = trajectory_plot,
                   preserve_inter_regional_differences=preserve_inter_regional_differences))#, pred_poisson=pred_df_poisson))
@@ -410,8 +411,8 @@ spatiotemp_censored_index_fun <- function(data, survey_boundaries, species, M=10
                   pred_spatiotemp=pred_df,
                   trajectory_samples=trajectory_samples,
                   pred_df_plot=pred_df_plot,
-                  posterior_mean = sapply(mod$marginals.fitted.values[grepl(rownames(mod$summary.fitted.values), pattern = 'AP')],FUN = function(x){INLA::inla.rmarginal(marginal=x, n=1000)}),
-                  posterior_sample = sapply(mod$marginals.fitted.values[grepl(rownames(mod$summary.fitted.values), pattern = 'AP')],FUN = function(x){rpois(lambda=INLA::inla.rmarginal(marginal=x, n=1000), n=1000)}),
+                  posterior_mean = sapply(mod$marginals.fitted.values[grepl(rownames(mod$summary.fitted.values), pattern = 'AP')],FUN = function(x){INLA::inla.rmarginal(marginal=x, n=M)}),
+                  posterior_sample = sapply(mod$marginals.fitted.values[grepl(rownames(mod$summary.fitted.values), pattern = 'AP')],FUN = function(x){rpois(lambda=INLA::inla.rmarginal(marginal=x, n=M), n=M)}),
                   index_plot = index_plot,
                   trajectory_plot = trajectory_plot,
                   preserve_inter_regional_differences=preserve_inter_regional_differences))#, pred_poisson=pred_df_poisson))

@@ -35,28 +35,29 @@ colsc <- function(...) {
 
 This markdown document will outline the steps needed to use the hookCompetition package.
 
-# Step 1 - Setting the initial values.
+# Step 1 - Setting parameters for generating the Rmarkdown document
 
 ```{r loadpackage}
 # Set the number of cores to use to generate the vignette
 n_cores <- 1
-# Set the number of samples to use for bootstrapping for Monte Carlo approximations to posterior quantities. Should be set much higher for real applications!
+# Set the number of samples to use for bootstrapping for Monte Carlo approximations to 
+# posterior quantities. Should be set much higher for real applications!
 n_samp <- 100
 ```
 
 # Step 2 - Loading the data.
 
-The function `read_Data_hookcomp()` achieves this. The arguments to the function are:
+The function `read_Data_hookcomp()` reads in longline catch count data collected by the IPHC. The arguments to the function are:
 
-- `species_vec` is a character vector of the one or more species desired for modelling
+- `species_vec` is a character vector of the one or more species desired for modelling (e.g. 'yelloweye rockfish')
 - `at_PBS` is a logical flag determining if the user has access to the gf data. If FALSE, yelloweye rockfish must be the specified species. 
-- `simple_species_vec` is a character vector containing the desired shortened names of the species
+- `simple_species_vec` is a character vector containing the desired shortened names of the species (e.g. 'yelloweye')
 - `data_wd` is a character vector stating the working directory where the rds files will be saved
-- `min_dist` is a numeric stating the minimum distance (km) required for a temporary IPHC station to be from a permanent IPHC station to be included
-- `min_dist_to_boundary` is a numeric stating the minimum distance (km) required for an IPHC station to be from the survey boundary
+- `min_dist` is a numeric stating the minimum distance (km) required for a temporary IPHC station to be from a permanent IPHC station to be included. If 0, discard all temporary stations from analysis.
+- `min_dist_to_boundary` is a numeric stating the minimum distance from a survey boundary (km) required for an IPHC station to be included as data. If 0, then only include stations strictly within `survey_boundaries`
 - `years_all_vec` is a numeric vector stating the years all hooks were enumerated
-- `years_20_vec` is a numeric vector stating the years only 20 hooks were enumerated
-- `survey_boundaries`   # survey_boundaries is a SpatialPolygonsDataFrame object containing user-specified survey boundaries for indices to be computed in. If NULL QCS, WCHG, WCVI, HS used. The data.frame *must* contain a factor variable `Region` with levels equal to the names of the regions
+- `years_20_vec` is a numeric vector stating the years only 20 hooks were enumerated. Only data from years specified in the above two arguments are downloaded and included for later analysis.
+- `survey_boundaries`   survey_boundaries is a `sf` polygons object containing user-specified survey boundaries for indices to be computed in. If NULL, then QCS, WCHG, WCVI, HS is used. The data.frame *must* contain a factor variable `Region` with levels equal to the names of the regions
 - `preserve_inter_regional_differences` Logical. If `TRUE` the relative magnitudes in catch rates between the subregions are preserved. If `FALSE` the catch rates are normalized separately within each subregion. Use the latter if differences in absolute abundances between regions are not desired and only temporal trends *within* each subregion are desired. 
 
 
@@ -77,7 +78,7 @@ data <- hookCompetition::read_Data_hookcomp(
 ```
 
 The function `read_Data_hookcomp()` returns a list containing two entries:
-- `Reduced_data_sp` is a SpatialPointsDataFrame containing all the set-level catch counts of the species specified (variable name `N_it_yelloweye`).
+- `Reduced_data_sp` is a `sf` points containing all the set-level catch counts of the species specified (variable name `N_it_yelloweye`).
 - `survey_boundaries` are the survey boundaries projected into the same CRS as the `Reduced_data_sp` object.
 
 To put the objects in the list into the current working environment, run the following:
@@ -87,6 +88,15 @@ list2env(data, globalenv())
 rm(data)
 ```
 
+*Note:* to use the package on custom data, ensure the following variable names are used inside the `sf` points object containing the catch counts:
+
+- `N_it_species` (where species is the name of the species used (e.g. yelloweye)). This contains the catch counts of the species
+- `effSkateIPHC` contains a measure of effort (e.g. number of hooks used etc.,)
+- `prop_removed` contains the proportion of baits removed from the fishing event
+- `year` the year of the fishing event
+- `region_INLA` the region where the fishing event took place. An index (numeric variable) matching the corresponding row in `survey_boundaries`
+- `station` containing the index of the fishing station where the fishing event took place. Useful if the same locations are visited each year (for multiple years)
+- `twentyhooks` a bindary variable indicating years where a different number of hooks were used. Useful if 2 fishing protocols are used and differences want to be controlled for. Set to 0 if not relevant.
 
 # Step 3 - Fit the indices without the spatio-temporal random effects. 
 
@@ -94,18 +104,18 @@ We derive bootstrap indices for a set of test species using the function `bootst
 
 The function `bootstrap_index_fun_run` takes as arguments:
 
-- `data` a SpatialPointsDataFrame object containing the IPHC data
-- `species` a character name of the species (linked to the variables `N_it` in the dataframe)
-- `survey_boundaries` a SpatialPolygonsDataFrame object containing the survey boundary definitions
+- `data` a `sf` points object containing the IPHC data (typically the `Reduced_data_sp` object from `read_Data_hookcomp`)
+- `species` a character of the species (typically matching `simple_species_vec` from `read_Data_hookcomp()` linked to the variables `N_it` in the dataframe)
+- `survey_boundaries` a `sf` polygons object containing the survey boundary definitions (typically outputted from `read_Data_hookcomp()`)
 - `R` specifies the number of bootstrap samples desired
 - `ncpus` specifies the number of cores to use in parallel
-- `type` specifies the type of bootstrap intervals to use (default percentile)
+- `type` specifies the type of bootstrap intervals to use (default percentile `perc`)
 - `return` when TRUE it returns the indices
-- `plot` when TRUE it returns the plot. 
+- `plot` when TRUE it returns the plot (can be memory costly when using large numbers of species). 
 
 ```{r bootstrap, cache=F, warning=F, message=F}
 bootstrap_ind <-
-bootstrap_index_fun_run(species_vec = 'yelloweye',
+bootstrap_index_fun_run(species = 'yelloweye',
                           data = Reduced_data_sp,
                           survey_boundaries = survey_boundaries,
                           R=n_samp,
@@ -117,12 +127,18 @@ bootstrap_index_fun_run(species_vec = 'yelloweye',
 
 ```
 
+The function `bootstrap_index_fun_run` returns a list containing 3 objects:
+
+- `species_boot` A data.frame containing the relative abundance indices by region
+- `ind_plot` A `ggplot2` object containing the relatie abundance plot 
+- `preserve_inter_regional_differences` A logical stating if the relative abundance indices can be compared between regions (if TRUE).
+
 We derive hook-competition-adjusted bootstrap indices using the same function `bootstrap_index_fun_run()`, but adding the argument `ICR_adjust=TRUE`. We derive an overall index and a subregion index (with subregions defined by the survey boundaries).
 
 
 ```{r bootstrap_compfactor, cache=F, warning=F, message=F}
 bootstrap_ind_compfactor <-
-bootstrap_index_fun_run(species_vec = 'yelloweye',
+bootstrap_index_fun_run(species = 'yelloweye',
                           data = Reduced_data_sp,
                           ICR_adjust=T,
                           survey_boundaries = survey_boundaries,
@@ -136,30 +152,33 @@ bootstrap_index_fun_run(species_vec = 'yelloweye',
 
 Finally, we compute Poisson-lognormal model-based indices of relative abundance. These include the CPUE-based (unadjusted), hook-competition-adjusted (ICR-based), and censored likelihood-based indices. 
 
-To compute all three indices we use the function `censored_index_fun` with arguments:
+To compute all three indices we use the function `censored_index_fun`. This function takes many arguments, many of which are optional. The non-optional arguments are:
 
-- `data`
-- `species`
-- `survey_boundaries`
+- `data` a `sf` points object containing the IPHC data
+- `species` a character name of the species (linked to the variables `N_it` in the dataframe)
+- `survey_boundaries` a `sf` polygons object containing the survey boundary definitions
 - `M` the number of independent Monte Carlo samples from the posterior used to compute indices
-- `return` logical stating whether or not to return indices as a data.frame
 - `ICR_adjust` A logical determining if the ICR-based scale-factor adjustment should be used
-- `cprop` the minimum proportion of baits needed to induce censorship
-- `nthreads` how many cores do you want to run in parallel when fitting the model
-- `keep` a logical stating if you want to return the INLA model object
+- `cprop` the minimum proportion of baits needed to induce censorship. If cprop > 1, then the data are not censored.
 - `use_upper_bound` a logical stating if right-censored or interval-censored is desired
 - `upper_bound_quantile` a proportion stating which quantiles of observation to remove censorship from. If greater than 1, do not remove censorship from any observation
-- `plot` logical
 - `allyears` logical determining if upper bound quantile is computed uniquely for each year (if False) or over all years (if TRUE)
-- `station_effects` logical stating if IID station-station random effects wanted
+- `preserve_inter_regional_differences` Logical
+- `return` logical stating whether or not to return indices as a data.frame
+- `plot` logical
+
+The optional arguments are:
+
+- `nthreads` how many cores do you want to run in parallel when fitting the model. Default 1
+- `station_effects` logical stating if IID station-station random effects wanted. Default `TRUE`
 - `prior_event` a prior distribution for the event-event IID random effect standard deviation (see HT.prior for default half t_7(0,1) distribution)
 - `prior_station` a prior distribution for the station-station IID random effect standard deviation (see HT.prior for default half t_7(0,1) distribution)
-- `init_vals` initial values for fitting model. If NULL let INLA choose them.
+- `init_vals` initial values for fitting model. If NULL (the default) let INLA choose them.
 - `n_knots` the number of knots used for the temporal 'spline'. Default is 8. More knots means a 'wigglier' temporal effect is allowed.
-- `seed` the seed used for Monte Carlo sampling. Note that 0 means the result is non-reproducible, but the code can be significantly faster.
-- `verbose` logical. If TRUE, show INLA diagnostics as the model fits. Can help to diagnose issues.
-- `n_trajectories` integer specifying how many Monte Carlo sampled relative abundance indices to plot on a spaghetti plot. This can help with interpreting uncertainty. Suggested value 10. 
-- `preserve_inter_regional_differences` Logical
+- `seed` the seed used for Monte Carlo sampling. Note that 0 (the default) means the result is non-reproducible, but the code can be significantly faster.
+- `verbose` logical. If TRUE, show INLA diagnostics as the model fits. Can help to diagnose issues. Default `FALSE`
+- `n_trajectories` integer specifying how many Monte Carlo sampled relative abundance indices to plot on a spaghetti plot. This can help with interpreting uncertainty. Default value 10.
+- `keep` a logical stating if you want to return the INLA model object. It can use up memory quickly, but can be useful for diagnosing convergence issues and inspecting model fit. Default `FALSE`
 
 We now fit all three indices
 
@@ -227,22 +246,37 @@ ggplot2::ggplot(censored_trajectory, ggplot2::aes(x=.data$year ,y=.data$mean, co
 ```
 
 
+The function `censored_index_fun()` returns a list containing up to 8 entries:
+
+- `pred_overdisp` a data.frame object containing the annual relative abundance indices by region
+- `trajectory_samples` a data.frame object containing `n_trajectories` sampled trajectories (time series).
+- `posterior_mean` a matrix containing posterior samples of $\hat{\mu}_{i,k}(s, t)$ (i.e. posterior samples of the mean of the counts - useful for posterior predictive checking using the `Bayesplot` package)
+- `posterior_sample` a matrix containing posterior predictive samples of $\hat{N}_{i,k}(s, t)$ (i.e. posterior sampled counts from the posterior predictive distribution - useful for posterior predictive checking using the `Bayesplot` package)
+- `index_plot` contains the `ggplot2` object of the sampled indices
+- `trajectory_plot` contains the `ggplot2` object of the sampled trajectories
+- `preserve_inter_regional_differences` a logical stating if the indices are comparable across subregions (if `TRUE`)
+- `mod` the returned `INLA` model fit.
+
 ## Bonus
 
 The package also allows for spatio-temporal indices to be fit
 
 Step 5 load the R objects required for fitting spatio-temporal models. These include: a delauney triangulation mesh for computing the GMRF approximation to the SPDE (cite Lindgren) within r-INLA (cite Rue); an INLA spde object with user-specified pc priors specified on the range and standard deviation parameters. Note that the spde object is a barrier model (cite Bakka) which accounts for land as a barrier.
 
-The function `make_spatial_objects()` achieves this. It takes arguments:
+The function `make_spatial_objects()` achieves this. It takes required arguments:
 
-- `data` a SpatialPointsDataFrame object containing the IPHC data
-- `survey_boundaries` a SpatialPolygonsDataFrame object containing the survey boundary definitions
-- `mesh_coast` a simplified (smoothed) SpatialPolygonsDataFrame object over which the triangulation mesh will be created. If NULL, a simplified shapefile of BC Coastline will be returned.
-- `hires_coast` a high-resolution SpatialPolygonsDataFrame object used for plotting. If NULL, a default BC coastline object will be returned.
-- `prior_range` Choose a value in kilometres such that the species density at two locations separated by distances greater than this will be `approximately' independent (typically a lower bound is chosen).
-- `prior_range_prob` What is you prior probability that the spatial range will be smaller than this value (typically a small probability)?
+- `data` a `sf` points object containing the IPHC data
+- `survey_boundaries` a `sf` polygons object containing the survey boundary definitions
+- `prior_range` Choose a value in kilometers such that the species density at two locations separated by distances greater than this will be `approximately' independent (typically a lower bound is chosen).
+- `prior_range_prob` What is you prior probability that the spatial range will be smaller than this value (typically a small probability is chosen to reduce the chances of over-fitting - see the Details section of  ?INLA::inla.spde2.pcmatern for details)
 - `prior_sigma` Choose a value for the marginal standard deviation of the random field. Typically an upper bound is used. Remember our linear predictor is on the log scale, so think about constraining exp(+- 2*SD) in terms of multiplicative regional differences. 
-- `prior_sigma_prob` What is your prior probability that the true marginal standard deviation exceeds this?
+- `prior_sigma_prob` What is your prior probability that the true marginal standard deviation exceeds this? (see the Details section of  ?INLA::inla.spde2.pcmatern for details)
+
+It takes optional arguments:
+
+- `mesh_coast` a simplified (smoothed) `sf` polygons object over which the triangulation mesh will be created. If NULL (default), a simplified shapefile of BC Coastline will be returned.
+- `hires_coast` a high-resolution `sf` polygons object used for plotting. If NULL (default), a default BC coastline object will be returned.
+- `nx` and `ny` How many columns of pixels to place over the survey_boundaries for plotting? Default 150, higher means smoother plots, but longer run times.
 
 ```{r makespatialobj, cache=F, warning=F, message=F}
 spatial_obj <- make_spatial_objects(
@@ -261,38 +295,52 @@ ggplot2::ggplot() + inlabru::gg(mesh) + inlabru::gg(as_Spatial(Reduced_data_sp))
 
 ```
 
+The function `make_spatial_objects()` returns a list containing X entries:
+
+- spde_mod an `inla.spde2.pcmatern` object used for setting up the GMRF-SPDE model
+- mesh an `inla.mesh.2d` object containing the triangulation mesh used for the random fields
+- triangle_ind currently `NULL`
+- Coast_hires `sf` polygons containing the high resolution coastline used for plotting
+- Coast_simp `sf` polygons containing the low resolution coastline used for building mesh (e.g. no islands or other land barriers)
+- predict_pixels `sf` points (pixels) object containing a regular grid of locations across `survey_boundaries` used for plotting and estimating the integrated intensity values for computing indices.
+
 # Step 6 Fit the spatio-temporal indices
 
 The following code *would* be run to make spatio-temporal indices of yelloweye abundance. We do not run the code to save time whilst generating this vignette. Instead, we load pre-compiled objects. Note, we removed map predictions from all years except 2000 to save space.
 
-The function `spatiotemp_censored_index_fun()` is used to fit the spatio-temporal indices. It takes arguments (the new ones are described):
+The function `spatiotemp_censored_index_fun()` is used to fit the spatio-temporal indices. It takes required arguments (the new ones are described):
 
-- `data` 
-- `survey_boundaries` 
-- `species` 
-- `M`
-- `return`
-- `ICR_adjust` 
-- `cprop`
-- `nthreads` 
-- `keep` 
-- `use_upper_bound` 
-- `upper_bound_quantile` 
-- `plot`
-- `allyears` 
-- `station_effects` 
-- `prior_event` 
-- `prior_station` 
-- `init_vals` 
-- `n_knots` 
-- `seed` 
+- `data` a `sf` points object containing the IPHC data
+- `species` a character name of the species (linked to the variables `N_it` in the dataframe)
+- `survey_boundaries` a `sf` polygons object containing the survey boundary definitions
+- `M` the number of independent Monte Carlo samples from the posterior used to compute indices
+- `ICR_adjust` A logical determining if the ICR-based scale-factor adjustment should be used
+- `cprop` the minimum proportion of baits needed to induce censorship. If cprop > 1, then the data are not censored.
+- `use_upper_bound` a logical stating if right-censored or interval-censored is desired
+- `upper_bound_quantile` a proportion stating which quantiles of observation to remove censorship from. If greater than 1, do not remove censorship from any observation
+- `allyears` logical determining if upper bound quantile is computed uniquely for each year (if False) or over all years (if TRUE)
+- `preserve_inter_regional_differences` Logical
+- `return` logical stating whether or not to return indices as a data.frame
+- `plot` logical
 - `mesh` An INLA mesh object (e.g. `mesh` created in `make_spatial_objects()`)
 - `spde` An INLA spde object (e.g. `spde_mod` created in `make_spatial_objects()`)
-- `pixels` A SpatialPixelsDataFrame object used for plotting the maps of relative abundance
+- `pixels` A `sf` points (pixels) object used for plotting the maps of relative abundance
+
+
+The optional arguments are:
+
+- `nthreads` how many cores do you want to run in parallel when fitting the model. Default 1
+- `station_effects` logical stating if IID station-station random effects wanted. Default `TRUE`
+- `prior_event` a prior distribution for the event-event IID random effect standard deviation (see HT.prior for default half t_7(0,1) distribution)
+- `prior_station` a prior distribution for the station-station IID random effect standard deviation (see HT.prior for default half t_7(0,1) distribution)
+- `init_vals` initial values for fitting model. If NULL (the default) let INLA choose them.
+- `n_knots` the number of knots used for the temporal 'spline'. Default is 8. More knots means a 'wigglier' temporal effect is allowed.
+- `seed` the seed used for Monte Carlo sampling. Note that 0 (the default) means the result is non-reproducible, but the code can be significantly faster.
+- `verbose` logical. If TRUE, show INLA diagnostics as the model fits. Can help to diagnose issues. Default `FALSE`
+- `n_trajectories` integer specifying how many Monte Carlo sampled relative abundance indices to plot on a spaghetti plot. This can help with interpreting uncertainty. Default value 10.
+- `keep` a logical stating if you want to return the INLA model object. It can use up memory quickly, but can be useful for diagnosing convergence issues and inspecting model fit. Default `FALSE`
 - `covs` Currently not implemented. Please let me know if (spatio-temporal) environmental covariate functionality is wanted in a future version.
-- `spatiotemporal` Logical. Do you want to identify temporal changes in relative abundance uniquely across space? Almost always yes.
-- `n_trajectories` integer specifying how many Monte Carlo sampled relative abundance indices to plot on a spaghetti plot. This can help with interpreting uncertainty. Suggested value 10. 
-- `preserve_inter_regional_differences` Logical
+- `spatiotemporal` Logical. Do you want to identify temporal changes in relative abundance uniquely across space? Almost always yes (default `TRUE`).
 
 Note that *these models can take a while to run (5-30 minutes)*. We advise you to set verbose=T so that you can assure yourself that something useful is happening behind the scenes :)
 
@@ -312,12 +360,23 @@ spatio_temporal_censored_ind <-
 
 ```
 
+The function `spatiotemp_censored_index_fun()` returns a list containing up to 8 entries:
+
+- `pred_spatiotemp` a data.frame object containing the annual relative abundance indices by region
+- `trajectory_samples` a data.frame object containing `n_trajectories` sampled trajectories (time series).
+- `posterior_mean` a matrix containing posterior samples of $\hat{\mu}_{i,k}(s, t)$ (i.e. posterior samples of the mean of the counts - useful for posterior predictive checking using the `Bayesplot` package)
+- `posterior_sample` a matrix containing posterior predictive samples of $\hat{N}_{i,k}(s, t)$ (i.e. posterior sampled counts from the posterior predictive distribution - useful for posterior predictive checking using the `Bayesplot` package)
+- `index_plot` contains the `ggplot2` object of the sampled indices
+- `trajectory_plot` contains the `ggplot2` object of the sampled trajectories
+- `preserve_inter_regional_differences` a logical stating if the indices are comparable across subregions (if `TRUE`)
+- `mod` the returned `INLA` model fit.
+
 Now we plot maps of yelloweye density from the three spatio-temporal models in the year 2000 using the function `spatio_temporal_plot_fun()` which takes arguments:
 
-- `pred_df_plot` the SpatialPixelsDataFrame output named `pred_df_plot` from the function `spatiotemp_censored_index_fun()`
+- `pred_df_plot` the `sf` points (pixels) output named `pred_df_plot` from the function `spatiotemp_censored_index_fun()`
 - `year` integer specifying the desired year for plotting
-- `variable` character specifying which variable to plot (e.g. mean, sd, etc.,)
-- `hires_COAST` SpatialPolygonsDataFrame object with the high resolution coastline
+- `variable` character specifying which variable to plot (e.g. 'mean', 'sd', etc.,)
+- `hires_COAST` `sf` polygons object with the high resolution coastline
 - `plot_figure` Logical - Do you want to plot the figure?
 - `return_figure` Logical - Do you want to return the figure?
 

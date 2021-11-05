@@ -39,7 +39,7 @@ read_Data_hookcomp(
 
 \item{years_20_vec}{is a numeric vector stating the years only 20 hooks were enumerated}
 
-\item{survey_boundaries}{is a SpatialPolygonsDataFrame object containing user-specified survey boundaries for indices to be computed in. If NULL QCS, WCHG, WCVI, HS used. The data.frame *must* contain a factor variable `Region` with levels equal to the names of the regions}
+\item{survey_boundaries}{is a sf polygons object containing user-specified survey boundaries for indices to be computed in. If NULL QCS, WCHG, WCVI, HS used. The data.frame *must* contain a factor variable `Region` with levels equal to the names of the regions}
 }
 \description{
 Loads the IPHC catch count data for a species. It returns a list containing
