@@ -1,0 +1,361 @@
+---
+title: 'Case Study Analysis: Comparing the relative abundance estimators across multiple
+  species'
+author: "Joe Watson"
+date: "3/23/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Case Study
+
+The Rmarkdown document runs the analysis used in the paper (LINK IT HERE).
+
+First, we load in the data
+
+```{r loaddata, message=F, warning=F, cache=F}
+data <- hookCompetition::read_Data_hookcomp(
+  species_vec = c("yelloweye rockfish",
+            "arrowtooth flounder",
+            "lingcod",
+            "north pacific spiny dogfish",
+            "pacific cod",
+            "pacific halibut",
+            "redbanded rockfish",
+            "sablefish",
+            "big skate",
+            "longnose skate",
+            "shortspine thornyhead",
+            "petrale sole"),
+  simple_species_vec = c("yelloweye",
+            "arrowtooth",
+            "lingcod",
+            "dogfish",
+            "cod",
+            "halibut",
+            "redbanded",
+            "sablefish",
+            "bigskate",
+            "longnose",
+            "shortspine",
+            "petrale"),
+  at_PBS = T,
+  data_wd = './',
+  min_dist = 50,
+  min_dist_to_boundary = 0,
+  years_all_vec = c(1995,1996,2003:2012, 2014:2019),
+  years_20_vec = c(1997:2002, 2013, 2020, 2021),
+  survey_boundaries=NULL
+)
+list2env(data, globalenv())
+rm(data)
+```
+
+We now fit all three indices to each of the species
+
+```{r model-based, cache=F, warning=T, message=T, eval=F}
+simple_species_vec = c("yelloweye",
+            "arrowtooth",
+            "lingcod",
+            "dogfish",
+            "cod",
+            "halibut",
+            "redbanded",
+            "sablefish",
+            "bigskate",
+            "longnose",
+            "shortspine",
+            "petrale")
+
+# Create a list for storing the results
+results_list <- vector('list', length=length(simple_species_vec))
+names(results_list) <- simple_species_vec
+# create a character vector storing the convergence status of censored Poisson model
+censored_poisson_convergence <- 
+  rep('right-censored', length(simple_species_vec))
+
+Reduced_data_sp$year <- Reduced_data_sp$year - min(Reduced_data_sp$year) + 1
+
+count <- 1
+for(i in simple_species_vec[-c(1:5)])
+{
+  CPUE_ind <-
+censored_index_fun_sdmTMB(
+  data=Reduced_data_sp, survey_boundaries=survey_boundaries, species=i, M=1000, return=T, ICR_adjust=F, cprop=1.1, keep=T, use_upper_bound=FALSE, upper_bound_quantile=1.1, plot=T, allyears=F, station_effects=T, seed=0, verbose=F, n_trajectories=0,
+  preserve_inter_regional_differences = T, smoothing_spline = F,
+  twentyhook_adjust = F
+)
+  if(!is.null(CPUE_ind$pred_overdisp))
+  {
+    CPUE_ind$pred_overdisp$Species=i
+    CPUE_ind$pred_overdisp$Method='CPUE-based'
+  }
+
+ICR_ind <-
+censored_index_fun_sdmTMB(
+  data=Reduced_data_sp, survey_boundaries=survey_boundaries, species=i, M=1000, return=T, ICR_adjust=T, cprop=1.1, keep=F, use_upper_bound=FALSE, upper_bound_quantile=1.1, plot=T, allyears=F, station_effects=T, seed=0, verbose=F, n_trajectories=0,
+  preserve_inter_regional_differences = T, smoothing_spline = F,
+  twentyhook_adjust = F
+)
+if(!is.null(ICR_ind$pred_overdisp))
+  {
+  ICR_ind$pred_overdisp$Species=i
+  ICR_ind$pred_overdisp$Method='ICR-based'
+  }
+
+# First try to fit the censored Poisson model without any upper bound 
+censored_ind <-
+censored_index_fun_sdmTMB(
+  data=Reduced_data_sp, survey_boundaries=survey_boundaries, species=i, M=1000, return=T, ICR_adjust=F, cprop=0.95, keep=F, use_upper_bound=FALSE, upper_bound_quantile=1.1, plot=T, allyears=F, station_effects=T, seed=0, verbose=F, n_trajectories=0, prev_fit =CPUE_ind$mod,
+  preserve_inter_regional_differences = T, smoothing_spline = F,
+  twentyhook_adjust = F
+    )
+  
+# If it fails to converge, try adding upper bound and removing censorship from upper 5% of data
+if(is.null(censored_ind$pred_overdisp))
+{
+  censored_ind <-
+censored_index_fun_sdmTMB(
+  data=Reduced_data_sp, survey_boundaries=survey_boundaries, species=i, M=1000, return=T, ICR_adjust=F, cprop=0.95, keep=F, use_upper_bound=TRUE, upper_bound_quantile=0.95, plot=T, allyears=F, station_effects=T, seed=0, verbose=F, n_trajectories=0, prev_fit =CPUE_ind$mod,
+  preserve_inter_regional_differences = T, smoothing_spline = F,
+  twentyhook_adjust = F
+    )
+  censored_poisson_convergence[count] <-
+    'interval-censored and upper 5% of data uncensored'
+  # If it fails to converge again, remove censorship from upper 15% of data
+  if(is.null(censored_ind$pred_overdisp))
+  {
+    censored_ind <-
+  censored_index_fun_sdmTMB(
+    data=Reduced_data_sp, survey_boundaries=survey_boundaries, species=i, M=1000, return=T, ICR_adjust=F, cprop=0.95, keep=F, use_upper_bound=TRUE, upper_bound_quantile=0.85, plot=T, allyears=F, station_effects=T, seed=0, verbose=F, n_trajectories=0, prev_fit =CPUE_ind$mod,
+  preserve_inter_regional_differences = T, smoothing_spline = F,
+  twentyhook_adjust = F
+    )
+    censored_poisson_convergence[count] <-
+    'interval-censored and upper 15% of data uncensored'
+  }
+}
+if(!is.null(censored_ind$pred_overdisp))
+  {
+  censored_ind$pred_overdisp$Species=i
+  censored_ind$pred_overdisp$Method='Censored'
+  }
+
+results_list[[count]] <- rbind(CPUE_ind$pred_overdisp, 
+                               ICR_ind$pred_overdisp,
+                               censored_ind$pred_overdisp)  
+
+print(paste0('Finished processing species number ',count,' out of ',length(simple_species_vec)))
+
+  count <- count + 1
+}
+
+
+```
+
+Next, we compute metrics to compare the estimators. Due to some limited data in the first 2 years, we restrict our comparisons to the years 1998-2021.
+
+```{r}
+library(dplyr)
+results <- do.call('rbind',results_list)
+
+results_summary <-
+results %>%
+filter(year>2 & region!='All') %>%
+group_by(Species,region) %>%
+summarise(Correlation_PI = ifelse(sum(Method=='CPUE-based') > 0 &
+                                      sum(Method=='ICR-based') > 0 ,
+                                    cor(mean[Method=='CPUE-based'],
+                                        mean[Method=='ICR-based'],
+                                        use='pairwise.complete.obs',
+                                        method='spearman'), NA),
+            Correlation_PC = ifelse(sum(Method=='CPUE-based') > 0 &
+                                      sum(Method=='Censored') > 0 ,
+                                    cor(mean[Method=='CPUE-based'],
+                                        mean[Method=='Censored'],
+                                        use='pairwise.complete.obs',
+                                        method='spearman'), NA),
+            Correlation_IC = ifelse(sum(Method=='Censored') > 0 &
+                                      sum(Method=='ICR-based') > 0 ,
+                                    cor(mean[Method=='Censored'],
+                                        mean[Method=='ICR-based'],
+                                        use='pairwise.complete.obs',
+                                        method='spearman'), NA),
+            Percentage_Overlap_PI = ifelse(sum(Method=='CPUE-based') > 0 &
+                                      sum(Method=='ICR-based') > 0 ,
+                                      mean((q0.025[Method=='CPUE-based'] >
+                                           q0.025[Method=='ICR-based'] &
+                                             q0.025[Method=='CPUE-based'] <
+                                           q0.975[Method=='ICR-based']) |
+                                             (q0.975[Method=='CPUE-based'] >
+                                           q0.025[Method=='ICR-based'] &
+                                             q0.975[Method=='CPUE-based'] <
+                                           q0.975[Method=='ICR-based'])),
+                                      NA),
+            Percentage_Overlap_PC = ifelse(sum(Method=='CPUE-based') > 0 &
+                                      sum(Method=='Censored') > 0 ,
+                                      mean((q0.025[Method=='CPUE-based'] >
+                                           q0.025[Method=='Censored'] &
+                                             q0.025[Method=='CPUE-based'] <
+                                           q0.975[Method=='Censored']) |
+                                             (q0.975[Method=='CPUE-based'] >
+                                           q0.025[Method=='Censored'] &
+                                             q0.975[Method=='CPUE-based'] <
+                                           q0.975[Method=='Censored'])),
+                                      NA),
+            Percentage_Overlap_IC = ifelse(sum(Method=='Censored') > 0 &
+                                      sum(Method=='ICR-based') > 0 ,
+                                      mean((q0.025[Method=='ICR-based'] >
+                                           q0.025[Method=='Censored'] &
+                                             q0.025[Method=='ICR-based'] <
+                                           q0.975[Method=='Censored']) |
+                                             (q0.975[Method=='ICR-based'] >
+                                           q0.025[Method=='Censored'] &
+                                             q0.975[Method=='ICR-based'] <
+                                           q0.975[Method=='Censored'])),
+                                      NA),
+            Interval_Width_Poisson = ifelse(sum(Method=='CPUE-based') > 0,
+                                      median(q0.975[Method=='CPUE-based']/
+                                             q0.025[Method=='CPUE-based']),
+                                      NA),
+            Interval_Width_ICR = ifelse(sum(Method=='ICR-based') > 0,
+                                      median(q0.975[Method=='ICR-based']/
+                                             q0.025[Method=='ICR-based']),
+                                      NA),
+            Interval_Width_Censored = ifelse(sum(Method=='Censored') > 0,
+                                      median(q0.975[Method=='Censored']/
+                                             q0.025[Method=='Censored']),
+                                      NA),
+            MAD_Poisson = ifelse(sum(Method=='CPUE-based') > 0,
+                                      mad(mean[Method=='CPUE-based']),
+                                      NA),
+            MAD_ICR = ifelse(sum(Method=='ICR-based') > 0,
+                                      mad(mean[Method=='ICR-based']),
+                                      NA),
+            MAD_Censored = ifelse(sum(Method=='Censored') > 0,
+                                      mad(mean[Method=='Censored']),
+                                      NA),
+            Range_Poisson = ifelse(sum(Method=='CPUE-based') > 0,
+                                      range(mean[Method=='CPUE-based'])[2]/
+                                      range(mean[Method=='CPUE-based'])[1],
+                                      NA),
+            Range_ICR = ifelse(sum(Method=='ICR-based') > 0,
+                                      range(mean[Method=='ICR-based'])[2]/
+                                      range(mean[Method=='ICR-based'])[1],
+                                      NA),
+            Range_Censored = ifelse(sum(Method=='Censored') > 0,
+                                      range(mean[Method=='Censored'])[2]/
+                                      range(mean[Method=='Censored'])[1],
+                                      NA),
+            Percentage_Unchanged_Poisson = ifelse(sum(Method=='CPUE-based') > 0,
+                                      mean(q0.975[Method=='CPUE-based'] >= 1 &
+                                             q0.025[Method=='CPUE-based'] <= 1),
+                                      NA),
+            Percentage_Unchanged_ICR = ifelse(sum(Method=='ICR-based') > 0,
+                                      mean(q0.975[Method=='ICR-based'] >= 1 &
+                                           q0.025[Method=='ICR-based'] <= 1),
+                                      NA),
+            Percentage_Unchanged_Censored = ifelse(sum(Method=='Censored') > 0,
+                                      mean(q0.975[Method=='Censored'] >= 1 &
+                                             q0.025[Method=='Censored'] <= 1),
+                                      NA)
+            
+            ) %>%
+  ungroup() %>%
+  summarise(Comparison = rep(c('CPUE-based vs ICR-based','CPUE-based vs Censored','ICR-based vs Censored'), times=6),
+            Measure = rep(c('Correlation','Percentage Overlap','Interval Width', 'MAD','Range','Percentage Unchanged'), each=3),
+            Median = c(median(Correlation_PI, na.rm=T),
+                       median(Correlation_PC, na.rm=T),
+                       median(Correlation_IC, na.rm=T),
+                       median(Percentage_Overlap_PI, na.rm=T),
+                       median(Percentage_Overlap_PC, na.rm=T),
+                       median(Percentage_Overlap_IC, na.rm=T),
+                       median(Interval_Width_Poisson-Interval_Width_ICR, na.rm=T),
+                       median(Interval_Width_Poisson-Interval_Width_Censored, na.rm=T),
+                       median(Interval_Width_ICR-Interval_Width_Censored, na.rm=T),
+                       median(MAD_Poisson-MAD_ICR, na.rm=T),
+                       median(MAD_Poisson-MAD_Censored, na.rm=T),
+                       median(MAD_ICR-MAD_Censored, na.rm=T),
+                       median(Range_Poisson-Range_ICR, na.rm=T),
+                       median(Range_Poisson-Range_Censored, na.rm=T),
+                       median(Range_ICR-Range_Censored, na.rm=T),
+                       median(Percentage_Unchanged_Poisson-Percentage_Unchanged_ICR, na.rm=T),
+                       median(Percentage_Unchanged_Poisson-Percentage_Unchanged_Censored, na.rm=T),
+                       median(Percentage_Unchanged_ICR-Percentage_Unchanged_Censored, na.rm=T)),
+            MAD = c(mad(Correlation_PI, na.rm=T),
+                       mad(Correlation_PC, na.rm=T),
+                       mad(Correlation_IC, na.rm=T),
+                       mad(Percentage_Overlap_PI, na.rm=T),
+                       mad(Percentage_Overlap_PC, na.rm=T),
+                       mad(Percentage_Overlap_IC, na.rm=T),
+                       mad(Interval_Width_Poisson-Interval_Width_ICR, na.rm=T),
+                       mad(Interval_Width_Poisson-Interval_Width_Censored, na.rm=T),
+                       mad(Interval_Width_ICR-Interval_Width_Censored, na.rm=T),
+                       mad(MAD_Poisson-MAD_ICR, na.rm=T),
+                       mad(MAD_Poisson-MAD_Censored, na.rm=T),
+                       mad(MAD_ICR-MAD_Censored, na.rm=T),
+                       mad(Range_Poisson-Range_ICR, na.rm=T),
+                       mad(Range_Poisson-Range_Censored, na.rm=T),
+                       mad(Range_ICR-Range_Censored, na.rm=T),
+                    mad(Percentage_Unchanged_Poisson-Percentage_Unchanged_ICR, na.rm=T),
+                       mad(Percentage_Unchanged_Poisson-Percentage_Unchanged_Censored, na.rm=T),
+                       mad(Percentage_Unchanged_ICR-Percentage_Unchanged_Censored, na.rm=T)),
+            N_comparisons = c(sum(!is.na(Correlation_PI)),
+                       sum(!is.na(Correlation_PC)),
+                       sum(!is.na(Correlation_IC)),
+                       sum(!is.na(Percentage_Overlap_PI)),
+                       sum(!is.na(Percentage_Overlap_PC)),
+                       sum(!is.na(Percentage_Overlap_IC)),
+                       sum(!is.na(Interval_Width_Poisson-Interval_Width_ICR)),
+                       sum(!is.na(Interval_Width_Poisson-Interval_Width_Censored)),
+                       sum(!is.na(Interval_Width_ICR-Interval_Width_Censored)),
+                       sum(!is.na(MAD_Poisson-MAD_ICR)),
+                       sum(!is.na(MAD_Poisson-MAD_Censored)),
+                       sum(!is.na(MAD_ICR-MAD_Censored)),
+                       sum(!is.na(Range_Poisson-Range_ICR)),
+                       sum(!is.na(Range_Poisson-Range_Censored)),
+                       sum(!is.na(Range_ICR-Range_Censored)),
+                       sum(!is.na(Percentage_Unchanged_Poisson-Percentage_Unchanged_ICR)),
+                       sum(!is.na(Percentage_Unchanged_Poisson-Percentage_Unchanged_Censored)),
+                       sum(!is.na(Percentage_Unchanged_ICR-Percentage_Unchanged_Censored))
+            )
+  )
+  
+results_summary$Comparison <- factor(results_summary$Comparison,
+                                     levels=c('CPUE-based vs ICR-based',
+                                              'CPUE-based vs Censored',
+                                              'ICR-based vs Censored'),
+                                     ordered = T)
+results_summary$Measure <- factor(results_summary$Measure,
+                                     levels=c('Correlation',
+                                              'Percentage Overlap',
+                                              'Interval Width',
+                                              'MAD',
+                                              'Range',
+                                              'Percentage Unchanged'
+                                              ),
+                                     ordered = T)
+
+```
+
+Finally, we plot our results
+
+```{r}
+library(ggplot2)
+results_summary %>%
+  ggplot(aes(x=Comparison, y=Median,
+         ymax=Median+1.96*(MAD/sqrt(N_comparisons)),
+         ymin=Median-1.96*(MAD/sqrt(N_comparisons)),
+         colour=Comparison, group=Comparison)) +
+  geom_errorbar() + geom_point() +
+  geom_hline(mapping = aes(yintercept=ifelse(
+    Measure %in% c('Correlation','Percentage Overlap'), 1, 0))) +
+  facet_wrap(~Measure, scales='free_y', nrow=3, ncol=2) +
+  ylab('Median Correlation or Median Difference') +
+  xlab('Estimators Being Compared')
+
+```
+

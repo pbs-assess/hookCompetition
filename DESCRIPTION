@@ -35,11 +35,13 @@ Imports:
     rlang (>= 0.4.11),
     Matrix
 RoxygenNote: 7.1.2
-Remotes: github::pbs-assess/gfiphc
+Remotes: github::pbs-assess/gfiphc,
+         github::pbs-assess/sdmTMB
 Suggests: 
     rmarkdown,
     knitr,
-    INLA
+    INLA,
+    sdmTMB
 VignetteBuilder: knitr
 Additional_repositories: 
     https://inla.r-inla-download.org/R/testing

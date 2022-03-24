@@ -106,7 +106,6 @@ pixels_sf <- function(mesh, nx = 150, ny = 150, mask = TRUE)
     }
   }
   if(inherits(mask, "sf")){
-    browser()
       pixels <- pixels[sapply(sf::st_intersects(pixels, mask),function(z){ifelse(length(z)==0,F,T)}),]
   }
   return(pixels)

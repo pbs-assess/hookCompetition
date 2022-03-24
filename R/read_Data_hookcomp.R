@@ -24,7 +24,7 @@ read_Data_hookcomp <- function(species_vec='yelloweye rockfish', at_PBS=F,
                                min_dist = 50,
                                min_dist_to_boundary=0,
                                years_all_vec = c(1995,1996,2003:2012, 2014:2019),
-                               years_20_vec = c(1997:2002, 2013, 2020),
+                               years_20_vec = c(1997:2002, 2013, 2020, 2021),
                                survey_boundaries=NULL
                                )
 {
@@ -93,6 +93,36 @@ read_Data_hookcomp <- function(species_vec='yelloweye rockfish', at_PBS=F,
   sets_1996_2002$long = sets_1996_2002$lon
   sets_1996_2002$station <- as.character(sets_1996_2002$station)
 
+  sets_1995 <- gfiphc::setData1995
+  sets_1995$obsHooksPerSet <- NA
+  sets_1995$long = sets_1995$lon
+  sets_1995$station <- as.character(sets_1995$station)
+  sets_1995$year = 1995
+
+  sets_1995rs <- gfiphc::setData1995rs
+  sets_1995rs$obsHooksPerSet <- NA
+  sets_1995rs$long = sets_1995rs$lon
+  sets_1995rs$station <- as.character(sets_1995rs$station)
+  sets_1995rs$year = 1995
+
+  sets_2013 <- gfiphc::setData2013
+  sets_2013$obsHooksPerSet <- NA
+  sets_2013$long = sets_2013$lon
+  sets_2013$station <- as.character(sets_2013$station)
+  sets_2013$year = 2013
+
+  sets_2020 <- gfiphc::setData2020
+  sets_2020$obsHooksPerSet <- sets_2020$hooksObs
+  sets_2020$long = sets_2020$lon
+  sets_2020$station <- as.character(sets_2020$station)
+  sets_2020$year = 2020
+
+  sets_2021 <- gfiphc::setData2021
+  sets_2021$obsHooksPerSet <- sets_2021$hooksObs
+  sets_2021$long = sets_2021$lon
+  sets_2021$station <- as.character(sets_2021$station)
+  sets_2021$year = 2021
+
   # read in 1995 sets?
   # Not yet available
 
@@ -159,7 +189,7 @@ read_Data_hookcomp <- function(species_vec='yelloweye rockfish', at_PBS=F,
         }
         if(species_vec[i] != 'yelloweye rockfish' | at_PBS == T)
         {
-          stop(paste0('the rds file for species ',sp,' is not available.'))
+          stop(paste0('the rds file for species ',data_species_vec[i],' is not available.'))
         }
       },
       finally={
@@ -206,7 +236,7 @@ read_Data_hookcomp <- function(species_vec='yelloweye rockfish', at_PBS=F,
       # keep only the relevant variables specified by var_names vector
       All_data_sp <-
         All_data_sp %>%
-        dplyr::inner_join(tmp[[i]][,var_names_species[[i]]])
+        dplyr::full_join(tmp[[i]][,var_names_species[[i]]])
 
       # All_data_sp_skate <-
       #   All_data_sp_skate %>%
@@ -221,19 +251,54 @@ read_Data_hookcomp <- function(species_vec='yelloweye rockfish', at_PBS=F,
     dplyr::inner_join(hook_with_bait[,c(1,2,3,4,5,8,11,12,13,14,15)]) %>%
     dplyr::left_join(sets[,c('year','setID','tripID','station','long','lat','obsHooksPerSet','deplHooksPerSet','effSkateIPHC','skatesCount','usable','iphcUsabilityDesc','standard','setInTrip')]) %>%
     dplyr::left_join(unique(sets_1996_2002[,c('year','station','obsHooksPerSet','usable')]),
-              by=c('year','station'))
+              by=c('year','station')) %>%
+    dplyr::left_join(unique(sets_1995[,c('year','station','obsHooksPerSet','usable')]),
+                     by=c('year','station')) %>%
+    dplyr::left_join(unique(sets_1995rs[,c('year','station','obsHooksPerSet','usable')]),
+                     by=c('year','station')) %>%
+    dplyr::left_join(unique(sets_2013[,c('year','station','obsHooksPerSet','usable')]),
+                     by=c('year','station')) %>%
+    dplyr::left_join(unique(sets_2020[,c('year','station','obsHooksPerSet','usable')]),
+                     by=c('year','station')) %>%
+    dplyr::left_join(unique(sets_2021[,c('year','station','obsHooksPerSet','usable')]),
+                     by=c('year','station'))
 
   # Merge the new usable.x and usable.y and obsHooksPerSet.x and obsHooksPerSet.y
-  All_data_sp$obsHooksPerSet <- All_data_sp$obsHooksPerSet.y
+  All_data_sp$obsHooksPerSet[is.na(All_data_sp$obsHooksPerSet)] <-
+    All_data_sp$obsHooksPerSet.y[is.na(All_data_sp$obsHooksPerSet)]
   All_data_sp$obsHooksPerSet[is.na(All_data_sp$obsHooksPerSet)] <-
     All_data_sp$obsHooksPerSet.x[is.na(All_data_sp$obsHooksPerSet)]
-  All_data_sp$usable <- All_data_sp$usable.y
+  All_data_sp$obsHooksPerSet[is.na(All_data_sp$obsHooksPerSet)] <-
+    All_data_sp$obsHooksPerSet.y.y[is.na(All_data_sp$obsHooksPerSet)]
+  All_data_sp$obsHooksPerSet[is.na(All_data_sp$obsHooksPerSet)] <-
+    All_data_sp$obsHooksPerSet.x.x[is.na(All_data_sp$obsHooksPerSet)]
+  All_data_sp$obsHooksPerSet[is.na(All_data_sp$obsHooksPerSet)] <-
+    All_data_sp$obsHooksPerSet.y.y.y[is.na(All_data_sp$obsHooksPerSet)]
+  All_data_sp$obsHooksPerSet[is.na(All_data_sp$obsHooksPerSet)] <-
+    All_data_sp$obsHooksPerSet.x.x.x[is.na(All_data_sp$obsHooksPerSet)]
+
+
+  All_data_sp$usable[is.na(All_data_sp$usable)] <-
+    All_data_sp$usable.y[is.na(All_data_sp$usable)]
   All_data_sp$usable[is.na(All_data_sp$usable)] <-
     All_data_sp$usable.x[is.na(All_data_sp$usable)]
+  All_data_sp$usable[is.na(All_data_sp$usable)] <-
+    All_data_sp$usable.y.y[is.na(All_data_sp$usable)]
+  All_data_sp$usable[is.na(All_data_sp$usable)] <-
+    All_data_sp$usable.x.x[is.na(All_data_sp$usable)]
+  All_data_sp$usable[is.na(All_data_sp$usable)] <-
+    All_data_sp$usable.y.y.y[is.na(All_data_sp$usable)]
+  All_data_sp$usable[is.na(All_data_sp$usable)] <-
+    All_data_sp$usable.x.x.x[is.na(All_data_sp$usable)]
+
   All_data_sp <-
     All_data_sp[,-c(which(names(All_data_sp) %in%
                             c('obsHooksPerSet.y','obsHooksPerSet.x',
-                              'usable.y','usable.x')))]
+                              'obsHooksPerSet.y.y','obsHooksPerSet.x.x',
+                              'obsHooksPerSet.y.y.y','obsHooksPerSet.x.x.x',
+                              'usable.y','usable.x',
+                              'usable.y.y','usable.x.x',
+                              'usable.y.y.y','usable.x.x.x')))]
 
   # All_data_sp <- sp::SpatialPointsDataFrame(
   #   coords = cbind(All_data_sp$lon,All_data_sp$lat),
@@ -340,10 +405,10 @@ read_Data_hookcomp <- function(species_vec='yelloweye rockfish', at_PBS=F,
     is.na(as.numeric(as.matrix(All_data_sp[,paste0('N_itAll_',simple_species_vec[1])])[,1])),
     1,0)
 
-  Reduced_data_sp <-
-    All_data_sp[which(All_data_sp$station %in% (names(table(All_data_sp$station))[table(All_data_sp$station)>1])),]
+  # Reduced_data_sp <-
+  #   All_data_sp[which(All_data_sp$station %in% (names(table(All_data_sp$station))[table(All_data_sp$station)>1])),]
 
-  Reduced_data_sp <- Reduced_data_sp[which(!(Reduced_data_sp$year %in% c(2012))),]
+  Reduced_data_sp <- All_data_sp[which(!(All_data_sp$year %in% c(2012))),]
 
   # NOTE THAT 2013 USED ONLY FIRST 20 HOOKS BUT THE OBSERVED NUMBER OF HOOKS IS NA.
   # MAP 1997'S EFFECTIVE SKATE VALUES TO 2013 VALUES TO OBTAIN THE NHOOKS.
@@ -367,6 +432,23 @@ read_Data_hookcomp <- function(species_vec='yelloweye rockfish', at_PBS=F,
     (Reduced_data_sp[which(Reduced_data_sp$year==2013),]$obsHooksPerSet -
        Reduced_data_sp[which(Reduced_data_sp$year==2013),]$N_it_hook) /
     Reduced_data_sp[which(Reduced_data_sp$year==2013),]$obsHooksPerSet
+
+  # Repeat for 1995 data too
+
+  # map 2013 values of eff skate to the closest matching n hooks
+  Reduced_data_sp[which(Reduced_data_sp$year==1995),]$obsHooksPerSet <-
+    c(as.numeric(names(mean_effskate_perhook_1997))[
+      apply(
+        outer(Reduced_data_sp[which(Reduced_data_sp$year==1995),]$effSkateIPHC,mean_effskate_perhook_1997,'-')^2,
+        1, which.min
+      )
+    ])
+  # update prop_removed variable
+  Reduced_data_sp[which(Reduced_data_sp$year==1995),]$prop_removed <-
+    (Reduced_data_sp[which(Reduced_data_sp$year==1995),]$obsHooksPerSet -
+       Reduced_data_sp[which(Reduced_data_sp$year==1995),]$N_it_hook) /
+    Reduced_data_sp[which(Reduced_data_sp$year==1995),]$obsHooksPerSet
+
 
   return(list(
     Reduced_data_sp = Reduced_data_sp,
