@@ -34,7 +34,7 @@
 #' @import stats
 spatiotemp_censored_index_fun <- function(data, survey_boundaries, species, M=1000, return=T, ICR_adjust=F, cprop=1.1, nthreads=1, keep=F, use_upper_bound=FALSE, upper_bound_quantile=1, plot=T, allyears=F, station_effects=T, prior_event=HT.prior(), prior_station=HT.prior(), init_vals = NULL, n_knots=8, seed=0, verbose=F, covs=NULL, spatiotemporal=F, mesh, spde, pixels, n_trajectories=10, preserve_inter_regional_differences=F)
 {
-  data$N_dat <- as.matrix(data[,c(paste0('N_it_',species))])[,1]
+  data$N_dat <- as.matrix(sf::st_drop_geometry(Reduced_data_sp)[,c(paste0('N_it_',species))])[,1]
   # filter out NAs
   data <- data[which(!is.na(data$N_dat) & !is.na(data$effSkateIPHC) & !is.na(data$region_INLA) & !is.na(data$prop_removed)),]
 
@@ -47,6 +47,8 @@ spatiotemp_censored_index_fun <- function(data, survey_boundaries, species, M=10
   {
     data$N_dat <- round(data$N_dat*comp_factor_fun(data$prop_removed,data$obsHooksPerSet))
   }
+  #browser()
+
   data$year_INLA <- as.numeric(data$year - min(data$year) + 1)
   data$station_ID <- as.numeric(as.factor(data$station))
   data$event_ID <- 1:length(data$year)#as.numeric(as.factor(data$station))#1:length(data$year)#
@@ -236,7 +238,8 @@ spatiotemp_censored_index_fun <- function(data, survey_boundaries, species, M=10
 
   if(!is.null(mod) & !is.nan(mod$dic$dic) & mod$misc$mode.status!=1000)
   {
-    df_tmp <- inlabru::cprod(data.frame(year=(c(1:nyear_INLA))),cbind(pixels, data.frame(sf::st_coordinates(pixels))))
+    df_tmp <- inlabru::cprod(data.frame(year=(c(1:nyear_INLA))),
+                             cbind(data.frame(sf::st_drop_geometry(pixels)), data.frame(sf::st_coordinates(pixels))))
 
     if(seed==0)
     {
@@ -293,7 +296,7 @@ spatiotemp_censored_index_fun <- function(data, survey_boundaries, species, M=10
                        (A_pred_t %*% mod$summary.random$yearind$sd^2)))
     pred_df_plot <- sf::st_as_sf(
       pred_df_plot,
-      coords=c('x','y'),
+      coords=c('X','Y'),
       crs = sf::st_crs(data)
     )
     pred_df_plot$year <- pred_df_plot$year + min_year - 1

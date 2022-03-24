@@ -111,3 +111,4 @@ pixels_sf <- function(mesh, nx = 150, ny = 150, mask = TRUE)
   }
   return(pixels)
 }
+
