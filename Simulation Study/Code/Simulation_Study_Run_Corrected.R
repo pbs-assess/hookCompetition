@@ -27,8 +27,8 @@ saturation_effects <- cbind(c(0, 0, 0),
 sat_fun <- function(sat_effect, sat_level, hook_sat_level=0.85)
 {
   val <- rep(1, length(sat_level))
-  
-  val[which(sat_level>hook_sat_level)] <- 
+
+  val[which(sat_level>hook_sat_level)] <-
     (1 - sat_effect*((sat_level[which(sat_level>hook_sat_level)]-hook_sat_level)/(1-hook_sat_level)))
   return(val)
 }
@@ -43,7 +43,7 @@ comp_factor_fun <- function(prop_hook, n_hook)
 }
 
 # plot(x=seq(from=0,to=1, length.out=100), y=sat_fun(0.8,seq(from=0,to=1, length.out=100)))
-# 
+#
 # # Plot the bite rates of the two species
 # plot(x=seq(from=0, to=5, length.out=100),y=exp(-seq(from=0, to=5, length.out=100))/(1-exp(-5)),
 #      type = 'l', main='bite rate functions', ylab='bite rate',xlab='time')
@@ -74,14 +74,14 @@ bite_samp <- function(bite_fun, n)
 # competition_fun <-
 #   function(data, p_sat, p_baseline){
 #     val <- rep(1, length(p_sat))
-#     
-#     preddata=data 
+#
+#     preddata=data
 #     preddata$prop_sat=p_sat
-#     #preddata$region <- preddata$region_INLA 
+#     #preddata$region <- preddata$region_INLA
 #     preddata2=preddata
 #     preddata2$prop_sat=p_baseline
 #     #browser()
-#     val2 <- 
+#     val2 <-
 #       apply(predict.gam(mod_species1,
 #                         newdata=preddata,
 #                         type = 'terms'),
@@ -96,8 +96,8 @@ bite_samp <- function(bite_fun, n)
 #     # predict.gam(mod_species1,
 #     #             newdata=preddata2,
 #     #             type = 'response')
-#     
-#     val[which(p_sat > p_baseline)] <- 
+#
+#     val[which(p_sat > p_baseline)] <-
 #       val2[which(p_sat > p_baseline)]
 #     return(val)
 #   }
@@ -141,14 +141,14 @@ for(nsim in 51:n_sim)
       {
         if(mean_attract[j] == 'constant')
         {
-          mean_bite = 
+          mean_bite =
             cbind(c(120, 140, 160, 180, 200, 280)*saturation_level[i],
                   rep(400,6),
                   rep(100, 6))
         }
         if(mean_attract[j] == 'linear')
         {
-          mean_bite = 
+          mean_bite =
             cbind(c(120, 140, 160, 180, 200, 280)*saturation_level[i],
                   rep(400,6),
                   c(120, 140, 160, 180, 200, 220)-100)
@@ -165,13 +165,13 @@ for(nsim in 51:n_sim)
           nbite$attracted <- rpois(dim(nbite)[1],
                                    lambda = as.numeric(mean_bite[cbind(nbite$station,nbite$species)])*
                                      exp(rnorm(dim(nbite)[1], mean = 0, sd=sd_log_bite[nbite$species])))
-          
+
           for(i2 in 1:nstation)
           {
             for(j2 in 1:nyears)
             {
               bite_time_1 <- bite_samp(bite_funs[1,l],sum(nbite$attracted[nbite$species==1 &
-                                                                          nbite$station==i2 & 
+                                                                          nbite$station==i2 &
                                                                           nbite$year==j2]))
               # truncate them to 0-5 interval
               while(max(bite_time_1)>soak_time)
@@ -181,37 +181,37 @@ for(nsim in 51:n_sim)
               }
               # repeat for species 2 from uniform distribution
               bite_time_2 <- bite_samp(bite_funs[2,l],sum(nbite$attracted[nbite$species==2 &
-                                                                          nbite$station==i2 & 
+                                                                          nbite$station==i2 &
                                                                           nbite$year==j2]))
               # truncate them to 0-5 interval
               while(max(bite_time_2)>soak_time)
               {
-                bite_time_2[bite_time_2>soak_time] <- 
+                bite_time_2[bite_time_2>soak_time] <-
                   bite_samp(bite_funs[2,l],sum(bite_time_2>soak_time))
               }
-              
+
               # repeat for species 3 from uniform distribution
               bite_time_3 <- bite_samp(bite_funs[3,l],sum(nbite$attracted[nbite$species==3 &
-                                                                          nbite$station==i2 & 
+                                                                          nbite$station==i2 &
                                                                           nbite$year==j2]))
               # truncate them to 0-5 interval
               while(max(bite_time_3)>soak_time)
               {
-                bite_time_3[bite_time_3>soak_time] <- 
+                bite_time_3[bite_time_3>soak_time] <-
                   bite_samp(bite_funs[3,l],sum(bite_time_3>soak_time))
               }
-              
-              # Now we sample the first n_hooks*n_hook_sat_level unadjusted 
+
+              # Now we sample the first n_hooks*n_hook_sat_level unadjusted
               if((length(bite_time_1) + length(bite_time_2) + length(bite_time_3)) <= n_hooks*hook_sat_level)
               {
                 nbite$bites[nbite$species==1 &
-                              nbite$station==i2 & 
+                              nbite$station==i2 &
                               nbite$year==j2] <- length(bite_time_1)
                 nbite$bites[nbite$species==2 &
-                              nbite$station==i2 & 
+                              nbite$station==i2 &
                               nbite$year==j2] <- length(bite_time_2)
                 nbite$bites[nbite$species==3 &
-                              nbite$station==i2 & 
+                              nbite$station==i2 &
                               nbite$year==j2] <- length(bite_time_3)
               }
               if((length(bite_time_1) + length(bite_time_2) + length(bite_time_3)) > n_hooks*hook_sat_level)
@@ -228,7 +228,7 @@ for(nsim in 51:n_sim)
                   flag <- T
                   if(species_ind[time_ind[k2]]==1)
                   {
-                    time_ind[k2] <- ifelse(rbinom(n=1,size=1, 
+                    time_ind[k2] <- ifelse(rbinom(n=1,size=1,
                                                   prob=sat_fun(sat_effect = saturation_effect[1],
                                                                sat_level = current_sat_level,
                                                                hook_sat_level = hook_sat_level))==1,
@@ -237,7 +237,7 @@ for(nsim in 51:n_sim)
                   }
                   if(species_ind[time_ind[k2]]==2 & flag)
                   {
-                    time_ind[k2] <- ifelse(rbinom(n=1,size=1, 
+                    time_ind[k2] <- ifelse(rbinom(n=1,size=1,
                                                   prob=sat_fun(sat_effect = saturation_effect[2],
                                                                sat_level = current_sat_level,
                                                                hook_sat_level = hook_sat_level))==1,
@@ -246,7 +246,7 @@ for(nsim in 51:n_sim)
                   }
                   if(species_ind[time_ind[k2]]==3 & flag)
                   {
-                    time_ind[k2] <- ifelse(rbinom(n=1,size=1, 
+                    time_ind[k2] <- ifelse(rbinom(n=1,size=1,
                                                   prob=sat_fun(sat_effect = saturation_effect[3],
                                                                sat_level = current_sat_level,
                                                                hook_sat_level = hook_sat_level))==1,
@@ -265,37 +265,37 @@ for(nsim in 51:n_sim)
                 }
                 time_ind <- time_ind[!is.na(time_ind)]
                 nbite$bites[nbite$species==1 &
-                              nbite$station==i2 & 
+                              nbite$station==i2 &
                               nbite$year==j2] <- sum(species_ind[time_ind]==1)
                 nbite$bites[nbite$species==2 &
-                              nbite$station==i2 & 
+                              nbite$station==i2 &
                               nbite$year==j2] <- sum(species_ind[time_ind]==2)
                 nbite$bites[nbite$species==3 &
-                              nbite$station==i2 & 
+                              nbite$station==i2 &
                               nbite$year==j2] <- sum(species_ind[time_ind]==3)
               }
-              
+
             }
           }
-          
+
           nbite <-
             nbite %>%
             group_by(station, year) %>%
             mutate(prop_sat=sum(bites/n_hooks),
                    composition=bites/(sum(bites)))
-          
+
           # ggplot(nbite, aes(x=station, y=bites, group=factor(species), colour=factor(species))) +
           #   geom_point() + geom_smooth() + geom_hline(yintercept = mean_bite[1,2:3]*exp(0.5*sd_log_bite[c(2,3)]^2))
-          # 
+          #
           # ggplot(nbite, aes(x=prop_sat, y=composition, group=factor(species), colour=factor(species))) +
-          #   geom_point() + geom_smooth() 
-          # 
+          #   geom_point() + geom_smooth()
+          #
           # ggplot(nbite[nbite$species!=2,], aes(x=prop_sat, y=composition, group=factor(species), colour=factor(species))) +
-          #   geom_point() + geom_smooth() 
-          # 
+          #   geom_point() + geom_smooth()
+          #
           # ggplot(nbite[nbite$species!=2,], aes(x=prop_sat, y=composition, group=factor(species), colour=factor(species))) +
           #   geom_point() + geom_smooth() + facet_wrap(~factor(station))
-          
+
           Results[results_mapper(nsim,i,j,k,l,'naive'),'Prop_Sat_85'] <- as.numeric(by(nbite, nbite$station, FUN=function(x){mean(x$prop_sat>cprop)}))
           Results[results_mapper(nsim,i,j,k,l,'adjust'),'Prop_Sat_85'] <- as.numeric(by(nbite, nbite$station, FUN=function(x){mean(x$prop_sat>cprop)}))
           Results[results_mapper(nsim,i,j,k,l,'censored'),'Prop_Sat_85'] <- as.numeric(by(nbite, nbite$station, FUN=function(x){mean(x$prop_sat>cprop)}))
@@ -304,8 +304,8 @@ for(nsim in 51:n_sim)
           Results[results_mapper(nsim,i,j,k,l,'censored'),'Prop_Sat_100'] <- as.numeric(by(nbite, nbite$station, FUN=function(x){mean(x$prop_sat==1)}))
           Results[results_mapper(nsim,i,j,k,l,'censored_95'),'Prop_Sat_100'] <- as.numeric(by(nbite, nbite$station, FUN=function(x){mean(x$prop_sat==1)}))
           Results[results_mapper(nsim,i,j,k,l,'censored_95'),'Prop_Sat_85'] <- as.numeric(by(nbite, nbite$station, FUN=function(x){mean(x$prop_sat>cprop)}))
-          
-          
+
+
           # fit a naive model that ignores competition
           dat <- nbite[nbite$species == 3,]
           dat$event_ID <- 1:dim(dat)[1]
@@ -316,7 +316,7 @@ for(nsim in 51:n_sim)
             inla.qmarginal(p=c(0.025, 0.5, 0.975),
                            marginal=inla.tmarginal(fun=exp,marginal=x))}))
           colnames(parameters)=c('LCL', 'Median','UCL')
-          
+
           Results[results_mapper(nsim,i,j,k,l,'naive'),'Bias'] <-
             (sapply(mod$marginals.fixed, FUN = function(x){
               inla.emarginal(fun=function(x){return(x)},marginal=inla.tmarginal(fun=exp,marginal=x))}) -
@@ -328,13 +328,13 @@ for(nsim in 51:n_sim)
           Results[results_mapper(nsim,i,j,k,l,'naive'),'Coverage'] <-
             ifelse(parameters[,1] <= mean_bite[,3] & parameters[,3] >= mean_bite[,3],
                    1,0)
-            
+
            # ggplot(data.frame(parameters), aes(y=Median, ymax=UCL, ymin=LCL, x=1:6)) +
-          #   geom_errorbar() + 
-          #   geom_line(data = data.frame(x2=1:nstation, y2=mean_bite[,3], UCL=0, LCL=0), aes(x=x2,y=y2), colour='red') + 
+          #   geom_errorbar() +
+          #   geom_line(data = data.frame(x2=1:nstation, y2=mean_bite[,3], UCL=0, LCL=0), aes(x=x2,y=y2), colour='red') +
           #   xlab('Station') +
           #   ylab('Station Abundance') + ggtitle('The true abundance shown in red')
-          
+
           mod2 <- inla(bites ~ factor(station) + f(event_ID, constr=T, model='iid'),
                        data = dat, family = 'poisson')
           #summary(mod2)
@@ -342,7 +342,7 @@ for(nsim in 51:n_sim)
             inla.qmarginal(p=c(0.025, 0.5, 0.975),
                            marginal=inla.tmarginal(fun=exp,marginal=x))}))[-1,]
           colnames(parameters)=c('LCL', 'Median','UCL')
-          
+
           Results[results_mapper(nsim,i,j,k,l,'naive'),'Rel_Bias'][-1] <-
             (sapply(mod2$marginals.fixed, FUN = function(x){
               inla.emarginal(fun=function(x){return(x)},marginal=inla.tmarginal(fun=exp,marginal=x))})[-1] -
@@ -355,11 +355,11 @@ for(nsim in 51:n_sim)
             ifelse(parameters[,1] <= mean_bite[-1,3]/mean_bite[1,3] & parameters[,3] >= mean_bite[-1,3]/mean_bite[1,3],
                    1,0)
           # ggplot(data.frame(parameters), aes(y=Median, ymax=UCL, ymin=LCL, x=2:6)) +
-          #   geom_errorbar() + 
-          #   geom_line(data = data.frame(x2=2:nstation, y2=mean_bite[-1,3]/mean_bite[1,3], UCL=0, LCL=0), aes(x=x2,y=y2), colour='red') + 
+          #   geom_errorbar() +
+          #   geom_line(data = data.frame(x2=2:nstation, y2=mean_bite[-1,3]/mean_bite[1,3], UCL=0, LCL=0), aes(x=x2,y=y2), colour='red') +
           #   xlab('Station') +
           #   ylab('Relative Abundance') + ggtitle('The true relative abundance shown in red')
-          
+
           dat$bites <- round(dat$bites*comp_factor_fun(1-dat$prop_sat, rep(n_hooks,length(dat$prop_sat))))
           mod3 <- inla(bites ~ -1 + factor(station) + f(event_ID, constr=T, model='iid'),
                        data = dat, family = 'poisson')
@@ -368,7 +368,7 @@ for(nsim in 51:n_sim)
             inla.qmarginal(p=c(0.025, 0.5, 0.975),
                            marginal=inla.tmarginal(fun=exp,marginal=x))}))
           colnames(parameters)=c('LCL', 'Median','UCL')
-          
+
           Results[results_mapper(nsim,i,j,k,l,'adjust'),'Bias'] <-
             (sapply(mod3$marginals.fixed, FUN = function(x){
               inla.emarginal(fun=function(x){return(x)},marginal=inla.tmarginal(fun=exp,marginal=x))}) -
@@ -381,11 +381,11 @@ for(nsim in 51:n_sim)
             ifelse(parameters[,1] <= mean_bite[,3] & parameters[,3] >= mean_bite[,3],
                    1,0)
           # ggplot(data.frame(parameters), aes(y=Median, ymax=UCL, ymin=LCL, x=1:6)) +
-          #   geom_errorbar() + 
-          #   geom_line(data = data.frame(x2=1:nstation, y2=mean_bite[,3], UCL=0, LCL=0), aes(x=x2,y=y2), colour='red') + 
+          #   geom_errorbar() +
+          #   geom_line(data = data.frame(x2=1:nstation, y2=mean_bite[,3], UCL=0, LCL=0), aes(x=x2,y=y2), colour='red') +
           #   xlab('Station') +
           #   ylab('Adjusted Station Abundance') + ggtitle('The true abundance shown in red')
-          
+
           mod4 <- inla(bites ~ factor(station) + f(event_ID, constr=T, model='iid'),
                        data = dat, family = 'poisson')
           #summary(mod4)
@@ -393,7 +393,7 @@ for(nsim in 51:n_sim)
             inla.qmarginal(p=c(0.025, 0.5, 0.975),
                            marginal=inla.tmarginal(fun=exp,marginal=x))}))[-1,]
           colnames(parameters)=c('LCL', 'Median','UCL')
-          
+
           Results[results_mapper(nsim,i,j,k,l,'adjust'),'Rel_Bias'][-1] <-
             (sapply(mod4$marginals.fixed, FUN = function(x){
               inla.emarginal(fun=function(x){return(x)},marginal=inla.tmarginal(fun=exp,marginal=x))})[-1] -
@@ -406,29 +406,29 @@ for(nsim in 51:n_sim)
             ifelse(parameters[,1] <= mean_bite[-1,3]/mean_bite[1,3] & parameters[,3] >= mean_bite[-1,3]/mean_bite[1,3],
                    1,0)
           # ggplot(data.frame(parameters), aes(y=Median, ymax=UCL, ymin=LCL, x=2:6)) +
-          #   geom_errorbar() + 
-          #   geom_line(data = data.frame(x2=2:nstation, y2=mean_bite[-1,3]/mean_bite[1,3], UCL=0, LCL=0), aes(x=x2,y=y2), colour='red') + 
+          #   geom_errorbar() +
+          #   geom_line(data = data.frame(x2=2:nstation, y2=mean_bite[-1,3]/mean_bite[1,3], UCL=0, LCL=0), aes(x=x2,y=y2), colour='red') +
           #   xlab('Station') +
           #   ylab('Adjusted Relative Abundance') + ggtitle('The true relative abundance shown in red')
-          # 
+          #
           # Try the censored approach
           # derive the competition function
-          
+
           # fit model
           # mod_species1 <- gam(formula=
           #                    composition ~ factor(station) + s(prop_sat, bs='cs') ,
-          #                  method.args=list(family='quasibinomial'), 
+          #                  method.args=list(family='quasibinomial'),
           #                  weights = nbite[nbite$species==1,]$prop_sat*800,
           #                  family='quasibinomial',
           #                  data = nbite[nbite$species==1,])
-          
+
           # mod_species1 <- gam(formula=
           #                       bites ~ factor(station) + s(prop_sat, bs='cs') + offset(I(log(prop_sat))),
-          #                     #method.args=list(family='quasibinomial'), 
+          #                     #method.args=list(family='quasibinomial'),
           #                     #weights = nbite[nbite$species==1,]$prop_sat*800,
           #                     family='quasipoisson',
           #                     data = nbite[nbite$species==1,])
-          
+
           # define function for distributing excess hooks across species
           # mod_dist <- gam(bites ~ factor(station)*factor(species) + I(log(prop_sat)) + s(prop_sat, by=factor(species)),
           #                 family='quasipoisson', data=nbite)
@@ -447,7 +447,7 @@ for(nsim in 51:n_sim)
           #   group_by(station, year) %>%
           #   mutate(prop_bite = ...8/sum(...8)) %>%
           #   filter(species==3)
-          
+
           # censorship interval
           upper_bound <- rep(0, length(nbite[nbite$species==3,]$prop_sat))
           species_1_uncensoredprop <- 0.5
@@ -459,25 +459,25 @@ for(nsim in 51:n_sim)
             #upper_bound <- nbite[nbite$species==1,]$bites - (nbite[nbite$species==1,]$bites / scale_fac)
             # assuming each 'non-spiny dogfish' species is equally affected by competition calculate
             # proportion of hooks to be allocated to target species
-            
-            # target_prop <- nbite[nbite$species==3,]$bites / 
+
+            # target_prop <- nbite[nbite$species==3,]$bites /
             #   (nbite[nbite$species==2,]$bites + nbite[nbite$species==3,]$bites)
-            
+
             # Use the Baranov Catch equation to (starting at 85% saturation) to derive scale factor
             dat <- nbite[nbite$species==3,]
             scale_fac <- rep(0, length(dat$bites))
-            scale_fac[dat$prop_sat>cprop] <- 
+            scale_fac[dat$prop_sat>cprop] <-
               comp_factor_fun(1-signif((dat[dat$prop_sat>cprop,]$prop_sat-cprop)/(1-cprop),5),
                               rep(round((1-cprop)*n_hooks),sum(dat$prop_sat>cprop)))
-            
+
             upper_bound[dat$prop_sat>cprop] <- round(
               (dat$prop_sat[dat$prop_sat>cprop]-cprop)*n_hooks*
                 scale_fac[dat$prop_sat>cprop])
-            
+
             #target_prop <- pred$prop_bite#rep(pred$prop_bite,length(dat$bites))#dat$bites/(dat$prop_sat*n_hooks) #rep(pred,length(dat$bites))
             # How many excess hooks should go to the target species?
             upper_bound <- round(upper_bound)
-            
+
             # Use the quantile of binomial distribution to get a probabalistic upper bound
             #upper_bound <- qbinom(size=round(upper_bound), prob = target_prop, p=1)
             #upper_bound <- rep(Inf, length(nbite[nbite$species==3,]$prop_sat))
@@ -486,28 +486,28 @@ for(nsim in 51:n_sim)
           dat <- nbite[nbite$species==3,]
           dat$low <- rep(Inf,dim(dat)[1])
           dat$high <- rep(Inf,dim(dat)[1])
-          
-          dat$low[which(dat$prop_sat >= cprop & 
+
+          dat$low[which(dat$prop_sat >= cprop &
                           0 < upper_bound &
-                          dat$bites < quantile(dat$bites,1))] <- 
-            as.matrix(dat[which(dat$prop_sat >= cprop & 
+                          dat$bites < quantile(dat$bites,1))] <-
+            as.matrix(dat[which(dat$prop_sat >= cprop &
                                   0 < upper_bound &
                                   dat$bites < quantile(dat$bites,1)),
                           c('bites')])[,1]
-          
-          dat$high[which(dat$prop_sat >= cprop & 
+
+          dat$high[which(dat$prop_sat >= cprop &
                            0 < upper_bound &
-                           dat$bites < quantile(dat$bites,1))] <- 
-            dat$bites[which(dat$prop_sat >= cprop & 
+                           dat$bites < quantile(dat$bites,1))] <-
+            dat$bites[which(dat$prop_sat >= cprop &
                               0 < upper_bound &
                               dat$bites < quantile(dat$bites,1))] +
-            upper_bound[which(dat$prop_sat >= cprop & 
+            upper_bound[which(dat$prop_sat >= cprop &
                                 0 < upper_bound &
                                 dat$bites < quantile(dat$bites,1))]
-          
-          
+
+
           ind_resp <- which(names(dat) %in% c('bites', 'low', 'high'))
-          
+
           dat$event_ID <- 1:dim(dat)[1]
           mod5 <- inla(formula = inla.mdata(cbind(bites,low,high)) ~ -1 + factor(station) + f(event_ID, constr=T, model='iid'),
                        family="cenpoisson2",verbose=F,
@@ -517,7 +517,7 @@ for(nsim in 51:n_sim)
             inla.qmarginal(p=c(0.025, 0.5, 0.975),
                            marginal=inla.tmarginal(fun=exp,marginal=x))}))
           colnames(parameters)=c('LCL', 'Median','UCL')
-          
+
           Results[results_mapper(nsim,i,j,k,l,'censored'),'Bias'] <-
             (sapply(mod5$marginals.fixed, FUN = function(x){
               inla.emarginal(fun=function(x){return(x)},marginal=inla.tmarginal(fun=exp,marginal=x))}) -
@@ -530,10 +530,10 @@ for(nsim in 51:n_sim)
             ifelse(parameters[,1] <= mean_bite[,3] & parameters[,3] >= mean_bite[,3],
                    1,0)
           # ggplot(data.frame(parameters), aes(y=Median, ymax=UCL, ymin=LCL, x=1:6)) +
-          #   geom_errorbar() + 
-          #   geom_line(data = data.frame(x2=1:nstation, y2=mean_bite[,3], UCL=0, LCL=0), aes(x=x2,y=y2), colour='red') + 
+          #   geom_errorbar() +
+          #   geom_line(data = data.frame(x2=1:nstation, y2=mean_bite[,3], UCL=0, LCL=0), aes(x=x2,y=y2), colour='red') +
           #   ylab('Censored Station Abundance') + ggtitle('The true abundance shown in red')
-          # 
+          #
           mod6 <- inla(formula = inla.mdata(cbind(bites,low,high)) ~ factor(station) + f(event_ID, constr=T, model='iid'),
                        family="cenpoisson2",verbose=F,
                        data= dat)
@@ -542,7 +542,7 @@ for(nsim in 51:n_sim)
             inla.qmarginal(p=c(0.025, 0.5, 0.975),
                            marginal=inla.tmarginal(fun=exp,marginal=x))}))[-1,]
           colnames(parameters)=c('LCL', 'Median','UCL')
-          
+
           Results[results_mapper(nsim,i,j,k,l,'censored'),'Rel_Bias'][-1] <-
             (sapply(mod6$marginals.fixed, FUN = function(x){
               inla.emarginal(fun=function(x){return(x)},marginal=inla.tmarginal(fun=exp,marginal=x))})[-1] -
@@ -554,9 +554,9 @@ for(nsim in 51:n_sim)
           Results[results_mapper(nsim,i,j,k,l,'censored'),'Rel_Coverage'][-1] <-
             ifelse(parameters[,1] <= mean_bite[-1,3]/mean_bite[1,3] & parameters[,3] >= mean_bite[-1,3]/mean_bite[1,3],
                    1,0)
-         
+
           ### Repeat for second censored model
-          
+
           # censorship interval
           upper_bound2 <- rep(0, length(nbite[nbite$species==3,]$prop_sat))
           species_1_uncensoredprop <- 0.5
@@ -568,25 +568,25 @@ for(nsim in 51:n_sim)
             #upper_bound <- nbite[nbite$species==1,]$bites - (nbite[nbite$species==1,]$bites / scale_fac)
             # assuming each 'non-spiny dogfish' species is equally affected by competition calculate
             # proportion of hooks to be allocated to target species
-            
-            # target_prop <- nbite[nbite$species==3,]$bites / 
+
+            # target_prop <- nbite[nbite$species==3,]$bites /
             #   (nbite[nbite$species==2,]$bites + nbite[nbite$species==3,]$bites)
-            
+
             # Use the Baranov Catch equation to (starting at 85% saturation) to derive scale factor
             dat <- nbite[nbite$species==3,]
             scale_fac2 <- rep(0, length(dat$bites))
-            scale_fac2[dat$prop_sat>cprop2] <- 
+            scale_fac2[dat$prop_sat>cprop2] <-
               comp_factor_fun(1-signif((dat[dat$prop_sat>cprop2,]$prop_sat-cprop2)/(1-cprop2),5),
                               rep(round((1-cprop2)*n_hooks),sum(dat$prop_sat>cprop2)))
-            
+
             upper_bound2[dat$prop_sat>cprop2] <- round(
               (dat$prop_sat[dat$prop_sat>cprop2]-cprop2)*n_hooks*
                 scale_fac[dat$prop_sat>cprop2])
-            
+
             #target_prop <- pred$prop_bite#rep(pred$prop_bite,length(dat$bites))#dat$bites/(dat$prop_sat*n_hooks) #rep(pred,length(dat$bites))
             # How many excess hooks should go to the target species?
             upper_bound2 <- round(upper_bound2)
-            
+
             # Use the quantile of binomial distribution to get a probabalistic upper bound
             #upper_bound <- qbinom(size=round(upper_bound), prob = target_prop, p=1)
             #upper_bound <- rep(Inf, length(nbite[nbite$species==3,]$prop_sat))
@@ -595,28 +595,28 @@ for(nsim in 51:n_sim)
           dat <- nbite[nbite$species==3,]
           dat$low <- rep(Inf,dim(dat)[1])
           dat$high <- rep(Inf,dim(dat)[1])
-          
-          dat$low[which(dat$prop_sat >= cprop2 & 
+
+          dat$low[which(dat$prop_sat >= cprop2 &
                           0 < upper_bound2 &
-                          dat$bites < quantile(dat$bites,1))] <- 
-            as.matrix(dat[which(dat$prop_sat >= cprop2 & 
+                          dat$bites < quantile(dat$bites,1))] <-
+            as.matrix(dat[which(dat$prop_sat >= cprop2 &
                                   0 < upper_bound2 &
                                   dat$bites < quantile(dat$bites,1)),
                           c('bites')])[,1]
-          
-          dat$high[which(dat$prop_sat >= cprop2 & 
+
+          dat$high[which(dat$prop_sat >= cprop2 &
                            0 < upper_bound2 &
-                           dat$bites < quantile(dat$bites,1))] <- 
-            dat$bites[which(dat$prop_sat >= cprop2 & 
+                           dat$bites < quantile(dat$bites,1))] <-
+            dat$bites[which(dat$prop_sat >= cprop2 &
                               0 < upper_bound2 &
                               dat$bites < quantile(dat$bites,1))] +
-            upper_bound2[which(dat$prop_sat >= cprop2 & 
+            upper_bound2[which(dat$prop_sat >= cprop2 &
                                 0 < upper_bound2 &
                                 dat$bites < quantile(dat$bites,1))]
-          
-          
+
+
           ind_resp <- which(names(dat) %in% c('bites', 'low', 'high'))
-          
+
           dat$event_ID <- 1:dim(dat)[1]
           mod7 <- inla(formula = inla.mdata(cbind(bites,low,high)) ~ -1 + factor(station) + f(event_ID, constr=T, model='iid'),
                        family="cenpoisson2",verbose=F,
@@ -626,7 +626,7 @@ for(nsim in 51:n_sim)
             inla.qmarginal(p=c(0.025, 0.5, 0.975),
                            marginal=inla.tmarginal(fun=exp,marginal=x))}))
           colnames(parameters)=c('LCL', 'Median','UCL')
-          
+
           Results[results_mapper(nsim,i,j,k,l,'censored_95'),'Bias'] <-
             (sapply(mod7$marginals.fixed, FUN = function(x){
               inla.emarginal(fun=function(x){return(x)},marginal=inla.tmarginal(fun=exp,marginal=x))}) -
@@ -639,10 +639,10 @@ for(nsim in 51:n_sim)
             ifelse(parameters[,1] <= mean_bite[,3] & parameters[,3] >= mean_bite[,3],
                    1,0)
           # ggplot(data.frame(parameters), aes(y=Median, ymax=UCL, ymin=LCL, x=1:6)) +
-          #   geom_errorbar() + 
-          #   geom_line(data = data.frame(x2=1:nstation, y2=mean_bite[,3], UCL=0, LCL=0), aes(x=x2,y=y2), colour='red') + 
+          #   geom_errorbar() +
+          #   geom_line(data = data.frame(x2=1:nstation, y2=mean_bite[,3], UCL=0, LCL=0), aes(x=x2,y=y2), colour='red') +
           #   ylab('Censored Station Abundance') + ggtitle('The true abundance shown in red')
-          # 
+          #
           mod8 <- inla(formula = inla.mdata(cbind(bites,low,high)) ~ factor(station) + f(event_ID, constr=T, model='iid'),
                        family="cenpoisson2",verbose=F,
                        data= dat)
@@ -651,7 +651,7 @@ for(nsim in 51:n_sim)
             inla.qmarginal(p=c(0.025, 0.5, 0.975),
                            marginal=inla.tmarginal(fun=exp,marginal=x))}))[-1,]
           colnames(parameters)=c('LCL', 'Median','UCL')
-          
+
           Results[results_mapper(nsim,i,j,k,l,'censored_95'),'Rel_Bias'][-1] <-
             (sapply(mod8$marginals.fixed, FUN = function(x){
               inla.emarginal(fun=function(x){return(x)},marginal=inla.tmarginal(fun=exp,marginal=x))})[-1] -
@@ -663,14 +663,14 @@ for(nsim in 51:n_sim)
           Results[results_mapper(nsim,i,j,k,l,'censored_95'),'Rel_Coverage'][-1] <-
             ifelse(parameters[,1] <= mean_bite[-1,3]/mean_bite[1,3] & parameters[,3] >= mean_bite[-1,3]/mean_bite[1,3],
                    1,0)
-          
+
           print(Results[results_mapper(nsim,i,j,k,l,'naive'),])
           print(Results[results_mapper(nsim,i,j,k,l,'adjust'),])
           print(Results[results_mapper(nsim,i,j,k,l,'censored'),])
           print(Results[results_mapper(nsim,i,j,k,l,'censored_95'),])
-          
+
         }
-        
+
       }
     }
   }
@@ -707,13 +707,13 @@ rel_abund_dat$Abundance[rel_abund_dat$species=='aggressive'&
                        rel_abund_dat$sat_level=='high']]
 
 rel_abund_plot <-
-ggplot(rel_abund_dat, 
+ggplot(rel_abund_dat,
        aes(x=Year, y=Abundance, linetype=species) ) +
   geom_rect(data= ~.x[.x$Year==1,],
             aes(x=Year, y=Abundance, linetype=species, fill = mean_attract),
             xmin = -Inf,xmax = Inf,
             ymin = -Inf,ymax = Inf,alpha = 0.3) +
-  geom_line() + 
+  geom_line() +
   facet_grid(mean_attract+sat_level~.,
              labeller = labeller(
                mean_attract = c(
@@ -730,14 +730,15 @@ ggplot(rel_abund_dat,
         panel.background = element_blank(), axis.line = element_blank()) +
   guides(fill='none') +
   theme(strip.background = element_blank(),strip.text = element_blank(),
-        legend.position = c(0.45,0.94),legend.box.background=element_blank(),
+        legend.position = c(0.45,0.9),legend.box.background=element_blank(),
         legend.background=element_blank(),
         axis.title.y = element_blank()) +
-  guides(linetype=guide_legend('Species Rel. Abundance'))
+  guides(linetype=guide_legend('Species'))
 
-# THESE ARE DESIGNED FOR A4 LANDSCAPE
+# THESE ARE DESIGNED FOR A4 LANDSCAPE or 5.83 x 11.3
 # NOTICE THE HACK IN MULTIPLOT'S LAYOUT ARGUMENT
 multiplot(
+  rel_abund_plot + ggtitle('Simulated Abundance'),
 Results %>%
   filter(Station>1) %>%
   group_by(model, Station, bite_fun,  sat_level, sat_effects, mean_attract) %>%
@@ -753,16 +754,16 @@ ggplot(aes(x=Station, y=Mean, ymin=LCL, ymax=UCL, colour=model, group=model, sha
             xmin = -Inf,xmax = Inf,
             ymin = -Inf,ymax = Inf,alpha = 0.3) +
   geom_errorbar(position = position_dodge(width=0.8)) +
-  geom_point(position = position_dodge(width=0.8), size=2) + 
+  geom_point(position = position_dodge(width=0.8), size=2) +
   facet_grid(mean_attract + sat_level ~ bite_fun + sat_effects , scales = 'free_y',
              labeller = labeller(
                sat_effects=c(
-                 `no saturation` = 'bait location ability constant',
-                 saturation = 'bait location ability declines'
+                 `no saturation` = 'Bait Location Ability Unaffected',
+                 saturation = 'Bait Location Ability Declines'
                ),
                bite_fun=c(
-                 constant = 'constant arrival rates',
-                 mixed = 'time-varying arrival rates'
+                 constant = 'Uniform Distributions',
+                 mixed = 'Mixture of Distributions'
                ),
                mean_attract = c(
                  constant = 'constant target species \nabundance',
@@ -775,21 +776,21 @@ ggplot(aes(x=Station, y=Mean, ymin=LCL, ymax=UCL, colour=model, group=model, sha
              )) +
   geom_hline(yintercept=0) +
   ggtitle('Bias in Relative Abundance Indices vs Method',
-          subtitle = 'Rows are trends in relative abundance of target species and the average degree of hook saturation,\nColumns describe both the arrival time distributions and the abilities to locate baited hooks after 85% of baits removed') +
+          subtitle = 'Rows are trends in relative abundance of target species and the average degree of hook saturation.\nColumns describe arrival time distributions and hook location abilities after 85% of baits removed.') +
   ylab('Bias in Relative Abundance Index') +
   xlab('Year') + guides(fill='none') +
   scale_fill_brewer(palette = 'Pastel1') +
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
           panel.background = element_blank(), axis.line = element_blank(),
-        legend.position = 'right') +
-  scale_color_viridis_d(labels=c('Naive','Adjusted','Censored','Censored 95')) +
-  scale_shape_manual(labels=c('Naive','Adjusted','Censored','Censored 95'),
+        legend.position = 'left', strip.text.y = element_blank()) +
+  scale_color_viridis_d(labels=c('CPUE','ICR','Censored','Censored 95')) +
+  scale_shape_manual(labels=c('CPUE','ICR','Censored','Censored 95'),
                       values=c('circle','triangle','square','square')) +
   guides(color=guide_legend(override.aes=list(fill=NA))),
-rel_abund_plot,
-layout = matrix(c(rep(1,2000),rep(NA,68), rep(2,432)), nrow = 500, ncol = 5, byrow = F))
+layout = matrix(c(rep(NA,72),rep(1,428),rep(2,2000)), nrow = 500, ncol = 5, byrow = F))
 
 multiplot(
+  rel_abund_plot + ggtitle('Simulated Abundance'),
 Results %>%
   filter(Station>1) %>%
   group_by(model, Station, bite_fun,  sat_level, sat_effects, mean_attract) %>%
@@ -805,16 +806,16 @@ Results %>%
             xmin = -Inf,xmax = Inf,
             ymin = -Inf,ymax = Inf,alpha = 0.3) +
   geom_errorbar(position = position_dodge(width=0.8)) +
-  geom_point(position = position_dodge(width=0.8), size=2) + 
+  geom_point(position = position_dodge(width=0.8), size=2) +
   facet_grid(mean_attract + sat_level ~ bite_fun + sat_effects , scales = 'free_y',
              labeller = labeller(
                sat_effects=c(
-                 `no saturation` = 'bait location ability constant',
-                 saturation = 'bait location ability declines'
+                 `no saturation` = 'Bait Location Ability Unaffected',
+                 saturation = 'Bait Location Ability Declines'
                ),
                bite_fun=c(
-                 constant = 'constant arrival rates',
-                 mixed = 'time-varying arrival rates'
+                 constant = 'Uniform Distributions',
+                 mixed = 'Mixture of Distributions'
                ),
                mean_attract = c(
                  constant = 'constant target species \nabundance',
@@ -827,21 +828,22 @@ Results %>%
              )) +
   geom_hline(yintercept=0) +
   ggtitle('Bias in Relative Abundance Indices vs Method',
-          subtitle = 'Rows are trends in relative abundance of target species and the average degree of hook saturation,\nColumns describe both the arrival time distributions and the abilities to locate baited hooks after 85% of baits removed') +
+          subtitle = 'Rows are trends in relative abundance of target species and the average degree of hook saturation.\nColumns describe arrival time distributions and hook location abilities after 85% of baits removed.') +
   ylab('Bias in Relative Abundance Index') +
   xlab('Year') + guides(fill='none') +
   scale_fill_brewer(palette = 'Pastel1') +
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
         panel.background = element_blank(), axis.line = element_blank(),
-        legend.position = 'right') +
-  scale_color_viridis_d(labels=c('Naive','Adjusted','Censored','Censored 95')) +
-  scale_shape_manual(labels=c('Naive','Adjusted','Censored','Censored 95'),
+        legend.position = 'left', strip.text.y = element_blank()) +
+  scale_color_viridis_d(labels=c('CPUE','ICR','Censored','Censored 95')) +
+  scale_shape_manual(labels=c('CPUE','ICR','Censored','Censored 95'),
                      values=c('circle','triangle','square','square')) +
   guides(color=guide_legend(override.aes=list(fill=NA))),
 rel_abund_plot,
-layout = matrix(c(rep(1,2000),rep(NA,68), rep(2,432)), nrow = 500, ncol = 5, byrow = F))
+layout = matrix(c(rep(NA,72),rep(1,428),rep(2,2000)), nrow = 500, ncol = 5, byrow = F))
 
 multiplot(
+  rel_abund_plot + ggtitle('Simulated Abundance'),
 Results %>%
   filter(Station>1, !(model %in% c('naive','adjust'))) %>%
   group_by(model, Station, bite_fun,  sat_level, sat_effects, mean_attract) %>%
@@ -857,16 +859,16 @@ Results %>%
             xmin = -Inf,xmax = Inf,
             ymin = -Inf,ymax = Inf,alpha = 0.3) +
   geom_errorbar(position = position_dodge(width=0.8)) +
-  geom_point(position = position_dodge(width=0.8), size=2) + 
+  geom_point(position = position_dodge(width=0.8), size=2) +
   facet_grid(mean_attract + sat_level ~ bite_fun + sat_effects , scales = 'free_y',
              labeller = labeller(
                sat_effects=c(
-                 `no saturation` = 'bait location ability constant',
-                 saturation = 'bait location ability declines'
+                 `no saturation` = 'Bait Location Ability Unaffected',
+                 saturation = 'Bait Location Ability Declines'
                ),
                bite_fun=c(
-                 constant = 'constant arrival rates',
-                 mixed = 'time-varying arrival rates'
+                 constant = 'Uniform Distributions',
+                 mixed = 'Mixture of Distributions'
                ),
                mean_attract = c(
                  constant = 'constant target species \nabundance',
@@ -879,21 +881,22 @@ Results %>%
              )) +
   geom_hline(yintercept=0) +
   ggtitle('Bias in Relative Abundance Indices vs Method',
-          subtitle = 'Rows are trends in relative abundance of target species and the average degree of hook saturation,\nColumns describe both the arrival time distributions and the abilities to locate baited hooks after 85% of baits removed') +
+          subtitle = 'Rows are trends in relative abundance of target species and the average degree of hook saturation.\nColumns describe arrival time distributions and hook location abilities after 85% of baits removed.') +
   ylab('Bias in Relative Abundance Index') +
   xlab('Year') + guides(fill='none') +
   scale_fill_brewer(palette = 'Pastel1') +
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
         panel.background = element_blank(), axis.line = element_blank(),
-        legend.position = 'right') +
+        legend.position = 'left', strip.text.y = element_blank()) +
   scale_color_viridis_d(labels=c('Censored','Censored 95')) +
   scale_shape_manual(labels=c('Censored','Censored 95'),
                      values=c('circle','triangle')) +
   guides(color=guide_legend(override.aes=list(fill=NA))),
 rel_abund_plot,
-layout = matrix(c(rep(1,2000),rep(NA,68), rep(2,432)), nrow = 500, ncol = 5, byrow = F))
+layout = matrix(c(rep(NA,72),rep(1,428),rep(2,2000)), nrow = 500, ncol = 5, byrow = F))
 
 multiplot(
+  rel_abund_plot + ggtitle('Simulated Abundance'),
 Results %>%
   filter(Station>1) %>%
   group_by(model, Station, bite_fun,  sat_level, sat_effects, mean_attract) %>%
@@ -913,12 +916,12 @@ Results %>%
   facet_grid(mean_attract + sat_level ~ bite_fun + sat_effects , scales = 'free_y',
              labeller = labeller(
                sat_effects=c(
-                 `no saturation` = 'bait location ability constant',
-                 saturation = 'bait location ability declines'
+                 `no saturation` = 'Bait Location Ability Unaffected',
+                 saturation = 'Bait Location Ability Declines'
                ),
                bite_fun=c(
-                 constant = 'constant arrival rates',
-                 mixed = 'time-varying arrival rates'
+                 constant = 'Uniform Distributions',
+                 mixed = 'Mixture of Distributions'
                ),
                mean_attract = c(
                  constant = 'constant target species \nabundance',
@@ -931,21 +934,21 @@ Results %>%
              )) +
   geom_hline(yintercept=0.95) +
   ggtitle('Coverage of Intervals of Relative Abundance Indices vs Method',
-          subtitle = 'Rows are trends in relative abundance of target species and the average degree of hook saturation,\nColumns describe both the arrival time distributions and the abilities to locate baited hooks after 85% of baits removed') +
+          subtitle = 'Rows are trends in relative abundance of target species and the average degree of hook saturation.\nColumns describe arrival time distributions and hook location abilities after 85% of baits removed.') +
   ylab('Coverage of relative abundance intervals') +
   xlab('Year') + guides(fill='none') +
   scale_fill_brewer(palette = 'Pastel1') +
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
         panel.background = element_blank(), axis.line = element_blank(),
-        legend.position = 'right') +
-  scale_color_viridis_d(labels=c('Naive','Adjusted','Censored','Censored 95')) +
-  scale_shape_manual(labels=c('Naive','Adjusted','Censored','Censored 95'),
+        legend.position = 'left', strip.text.y = element_blank()) +
+  scale_color_viridis_d(labels=c('CPUE','ICR','Censored','Censored 95')) +
+  scale_shape_manual(labels=c('CPUE','ICR','Censored','Censored 95'),
                      values=c('circle','triangle','square','square')) +
   guides(color=guide_legend(override.aes=list(fill=NA))),
-rel_abund_plot,
-layout = matrix(c(rep(1,2000),rep(NA,68), rep(2,432)), nrow = 500, ncol = 5, byrow = F))
+layout = matrix(c(rep(NA,72),rep(1,428),rep(2,2000)), nrow = 500, ncol = 5, byrow = F))
 
 multiplot(
+  rel_abund_plot + ggtitle('Simulated Abundance'),
   Results %>%
     filter(Station>1) %>%
     group_by(model, Station, bite_fun,  sat_level, sat_effects, mean_attract) %>%
@@ -961,16 +964,16 @@ multiplot(
               xmin = -Inf,xmax = Inf,
               ymin = -Inf,ymax = Inf,alpha = 0.3) +
     geom_errorbar(position = position_dodge(width=0.8)) +
-    geom_point(position = position_dodge(width=0.8), size=2) + 
+    geom_point(position = position_dodge(width=0.8), size=2) +
     facet_grid(mean_attract + sat_level ~ bite_fun + sat_effects , scales = 'free_y',
                labeller = labeller(
                  sat_effects=c(
-                   `no saturation` = 'bait location ability constant',
-                   saturation = 'bait location ability declines'
+                   `no saturation` = 'Bait Location Ability Unaffected',
+                   saturation = 'Bait Location Ability Declines'
                  ),
                  bite_fun=c(
-                   constant = 'constant arrival rates',
-                   mixed = 'time-varying arrival rates'
+                   constant = 'Uniform Distributions',
+                   mixed = 'Mixture of Distributions'
                  ),
                  mean_attract = c(
                    constant = 'constant target species \nabundance',
@@ -983,21 +986,21 @@ multiplot(
                )) +
     geom_hline(yintercept=0) +
     ggtitle('MSE in Relative Abundance Indices vs Method',
-            subtitle = 'Rows are trends in relative abundance of target species and the average degree of hook saturation,\nColumns describe both the arrival time distributions and the abilities to locate baited hooks after 85% of baits removed') +
+            subtitle = 'Rows are trends in relative abundance of target species and the average degree of hook saturation.\nColumns describe arrival time distributions and hook location abilities after 85% of baits removed.') +
     ylab('MSE in Relative Abundance Index') +
     xlab('Year') + guides(fill='none') +
     scale_fill_brewer(palette = 'Pastel1') +
     theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
           panel.background = element_blank(), axis.line = element_blank(),
-          legend.position = 'right') +
-    scale_color_viridis_d(labels=c('Naive','Adjusted','Censored','Censored 95')) +
-    scale_shape_manual(labels=c('Naive','Adjusted','Censored','Censored 95'),
+          legend.position = 'left', strip.text.y = element_blank()) +
+    scale_color_viridis_d(labels=c('CPUE','ICR','Censored','Censored 95')) +
+    scale_shape_manual(labels=c('CPUE','ICR','Censored','Censored 95'),
                        values=c('circle','triangle','square','square')) +
     guides(color=guide_legend(override.aes=list(fill=NA))),
-  rel_abund_plot,
-  layout = matrix(c(rep(1,2000),rep(NA,68), rep(2,432)), nrow = 500, ncol = 5, byrow = F))
+  layout = matrix(c(rep(NA,72),rep(1,428),rep(2,2000)), nrow = 500, ncol = 5, byrow = F))
 
 multiplot(
+  rel_abund_plot + ggtitle('Simulated Abundance'),
   Results %>%
     filter(Station>1, model!='naive') %>%
     group_by(model, Station, bite_fun,  sat_level, sat_effects, mean_attract) %>%
@@ -1013,16 +1016,16 @@ multiplot(
               xmin = -Inf,xmax = Inf,
               ymin = -Inf,ymax = Inf,alpha = 0.3) +
     geom_errorbar(position = position_dodge(width=0.8)) +
-    geom_point(position = position_dodge(width=0.8), size=2) + 
+    geom_point(position = position_dodge(width=0.8), size=2) +
     facet_grid(mean_attract + sat_level ~ bite_fun + sat_effects , scales = 'free_y',
                labeller = labeller(
                  sat_effects=c(
-                   `no saturation` = 'bait location ability constant',
-                   saturation = 'bait location ability declines'
+                   `no saturation` = 'Bait Location Ability Unaffected',
+                   saturation = 'Bait Location Ability Declines'
                  ),
                  bite_fun=c(
-                   constant = 'constant arrival rates',
-                   mixed = 'time-varying arrival rates'
+                   constant = 'Uniform Distributions',
+                   mixed = 'Mixture of Distributions'
                  ),
                  mean_attract = c(
                    constant = 'constant target species \nabundance',
@@ -1035,22 +1038,22 @@ multiplot(
                )) +
     geom_hline(yintercept=0) +
     ggtitle('MSE in Relative Abundance Indices vs Method',
-            subtitle = 'Rows are trends in relative abundance of target species and the average degree of hook saturation,\nColumns describe both the arrival time distributions and the abilities to locate baited hooks after 85% of baits removed') +
+            subtitle = 'Rows are trends in relative abundance of target species and the average degree of hook saturation.\nColumns describe arrival time distributions and hook location abilities after 85% of baits removed.') +
     ylab('MSE in Relative Abundance Index') +
     xlab('Year') + guides(fill='none') +
     scale_fill_brewer(palette = 'Pastel1') +
     theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
           panel.background = element_blank(), axis.line = element_blank(),
-          legend.position = 'right') +
-    scale_color_viridis_d(labels=c('Adjusted','Censored','Censored 95')) +
-    scale_shape_manual(labels=c('Adjusted','Censored','Censored 95'),
+          legend.position = 'left', strip.text.y = element_blank()) +
+    scale_color_viridis_d(labels=c('ICR','Censored','Censored 95')) +
+    scale_shape_manual(labels=c('ICR','Censored','Censored 95'),
                        values=c('triangle','square','square')) +
     guides(color=guide_legend(override.aes=list(fill=NA))),
-  rel_abund_plot,
-  layout = matrix(c(rep(1,2000),rep(NA,68), rep(2,432)), nrow = 500, ncol = 5, byrow = F))
+  layout = matrix(c(rep(NA,72),rep(1,428),rep(2,2000)), nrow = 500, ncol = 5, byrow = F))
 
 
 multiplot(
+  rel_abund_plot + ggtitle('Simulated Abundance'),
   Results %>%
     filter(Station>1) %>%
     group_by(Station, bite_fun,  sat_level, sat_effects, mean_attract) %>%
@@ -1071,12 +1074,12 @@ multiplot(
     facet_grid(mean_attract + sat_level ~ bite_fun + sat_effects , scales = 'free_y',
                labeller = labeller(
                  sat_effects=c(
-                   `no saturation` = 'bait location ability constant',
-                   saturation = 'bait location ability declines'
+                   `no saturation` = 'Bait Location Ability Unaffected',
+                   saturation = 'Bait Location Ability Declines'
                  ),
                  bite_fun=c(
-                   constant = 'constant arrival rates',
-                   mixed = 'time-varying arrival rates'
+                   constant = 'Uniform Distributions',
+                   mixed = 'Mixture of Distributions'
                  ),
                  mean_attract = c(
                    constant = 'constant target species \nabundance',
@@ -1088,15 +1091,15 @@ multiplot(
                  )
                )) +
     ggtitle('Proportion of Fishing Events with Specified Level of Hook Saturation',
-            subtitle = 'Rows are trends in relative abundance of target species and the average degree of hook saturation,\nColumns describe both the arrival time distributions and the abilities to locate baited hooks after 85% of baits removed') +
+            subtitle = 'Rows are trends in relative abundance of target species and the average degree of hook saturation.\nColumns describe arrival time distributions and hook location abilities after 85% of baits removed.') +
     ylab('Proportion of fishing events') +
     xlab('Year') + guides(fill='none') +
     scale_fill_brewer(palette = 'Pastel1') +
     theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
           panel.background = element_blank(), axis.line = element_blank(),
-          legend.position = 'right') +
-    scale_color_viridis_d(labels=c('100% Hook Saturation','85% Hook Saturation')) +
-    guides(color=guide_legend(override.aes=list(fill=NA))),
-  rel_abund_plot,
-  layout = matrix(c(rep(1,2000),rep(NA,68), rep(2,432)), nrow = 500, ncol = 5, byrow = F))
+          legend.position = 'left', strip.text.y = element_blank()) +
+    scale_color_viridis_d(labels=c('100%','>85%')) +
+    guides(color=guide_legend(override.aes=list(fill=NA))) +
+    labs(colour='Baits Removed'),
+  layout = matrix(c(rep(NA,72),rep(1,428),rep(2,2000)), nrow = 500, ncol = 5, byrow = F))
 

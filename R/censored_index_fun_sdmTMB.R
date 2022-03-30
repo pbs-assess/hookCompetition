@@ -19,7 +19,7 @@
 #' @param n_trajectories integer specifying how many Monte Carlo sampled relative abundance indices to plot on a spaghetti plot. This can help with interpreting uncertainty. Suggested value 10.
 #' @param preserve_inter_regional_differences Logical if TRUE estimated inter-regional differences in mean abundance are shown at a cost of higher variance. Does not affect coastwide index.
 #' @param prev_fit a previous sdmTMB model fit (probably returned using keep=T). Speeds up model fitting dramatically
-#' @param smoothing_spline Logical if TRUE (default) then relative abundance trend assumed to be smooth - perfect for long-living species with small home range. If FALSE, then a random walk temporal structure is assumed.
+#' @param time_effect Character if 'unstructured' (default) then a factor variable of year-region combinations created. If 'spline' then a penalized spline of relative abundance trend is estimated per region - perfect for long-living species with small home range. If 'random walk', then a random walk temporal structure is assumed for each region.
 #' @param twentyhook_adjust Logical if TRUE (default) then estimate a unique intercept for the 'twenty hook' observations to account for potential observer biases.
 #' @export
 #' @importFrom magrittr %>%
@@ -44,7 +44,7 @@ censored_index_fun_sdmTMB <-
            n_trajectories = 10,
            preserve_inter_regional_differences = F,
            prev_fit=NULL,
-           smoothing_spline = T,
+           time_effect = 'unstructured',
            twentyhook_adjust=T)
   {
     # remove geometry features from data
@@ -176,38 +176,73 @@ censored_index_fun_sdmTMB <-
         NA
     }
 
-    if (smoothing_spline)
+    if (time_effect == 'spline')
     {
       time_varying <- NULL
-      if (station_effects)
+      if(nregion > 1)
       {
-        # # define formulae
-        formulae <- formula(
-          paste0('N_dat ~ -1 +  region_INLA +
+        if (station_effects)
+        {
+          # # define formulae
+          formulae <- formula(
+            paste0('N_dat ~ -1 +  region_INLA +
     s(year, by=region_INLA) + offset +
     (1 | event_ID) + (1 | station_ID)',
-                 ifelse(twentyhook_adjust,' +
+                   ifelse(twentyhook_adjust,' +
     twentyhooks','')
-        ))
-      }
-      if (!station_effects)
-      {
-        # # define formulae
-        formulae <- formula(
-          paste0('N_dat ~ -1 +
+            ))
+        }
+        if (!station_effects)
+        {
+          # # define formulae
+          formulae <- formula(
+            paste0('N_dat ~ -1 +
           region_INLA +
     s(year, by=region_INLA) + offset +
     (1 | event_ID)',
-                 ifelse(twentyhook_adjust,' +
+                   ifelse(twentyhook_adjust,' +
     twentyhooks','')
+            )
           )
-        )
 
+        }
       }
+      if(nregion == 1)
+      {
+        if (station_effects)
+        {
+          # # define formulae
+          formulae <- formula(
+            paste0('N_dat ~ -1 +
+    s(year) + offset +
+    (1 | event_ID) + (1 | station_ID)',
+                   ifelse(twentyhook_adjust,' +
+    twentyhooks','')
+            ))
+        }
+        if (!station_effects)
+        {
+          # # define formulae
+          formulae <- formula(
+            paste0('N_dat ~ -1 +
+    s(year) + offset +
+    (1 | event_ID)',
+                   ifelse(twentyhook_adjust,' +
+    twentyhooks','')
+            )
+          )
+
+        }
+      }
+
     }
-    if (!smoothing_spline)
+    if (time_effect=='random walk')
     {
       time_varying <- formula( ~ -1 + region_INLA)
+      if(nregion == 1)
+      {
+        time_varying <- formula( ~ 1)
+      }
       if (station_effects)
       {
         # # define formulae
@@ -230,10 +265,70 @@ censored_index_fun_sdmTMB <-
 
       }
     }
+    if (time_effect=='unstructured')
+    {
+      data$year <- factor(data$year)
+      data$region_INLA <- factor(data$region_INLA)
+      twentyhook_adjust <- F
+
+      time_varying <- NULL
+
+      if(nregion > 1)
+      {
+        if (station_effects)
+        {
+          # # define formulae
+          formulae <- formula(paste0('N_dat ~ -1 +
+        offset + year:region_INLA +
+    (1 | event_ID) + (1 | station_ID)',
+                                     ifelse(twentyhook_adjust,' +
+    twentyhooks','')
+          ))
+        }
+        if (!station_effects)
+        {
+          # # define formulae
+          formulae <- formula(paste0('N_dat ~ -1 +
+        offset + year:region_INLA
+    (1 | event_ID)',
+                                     ifelse(twentyhook_adjust,' +
+    twentyhooks','')
+          ))
+
+        }
+      }
+      if(nregion == 1)
+      {
+        if (station_effects)
+        {
+          # # define formulae
+          formulae <- formula(paste0('N_dat ~ -1 +
+        offset + year +
+    (1 | event_ID) + (1 | station_ID)',
+                                     ifelse(twentyhook_adjust,' +
+    twentyhooks','')
+          ))
+        }
+        if (!station_effects)
+        {
+          # # define formulae
+          formulae <- formula(paste0('N_dat ~ -1 +
+        offset + year +
+    (1 | event_ID)',
+                                     ifelse(twentyhook_adjust,' +
+    twentyhooks','')
+          ))
+
+        }
+      }
+
+    }
+
 
     # sdmTMB only fits the model at years present in the data. Fill in missing years
     missing_years <- NULL
-    if (sum(!(min_year:max_year %in% data$year)) > 0)
+    if (sum(!(min_year:max_year %in% data$year)) > 0 &
+        time_effect != 'unstructured')
     {
       missing_years <-
         (min_year:max_year)[!(min_year:max_year %in% data$year)]
@@ -349,8 +444,15 @@ censored_index_fun_sdmTMB <-
         sims = M
       ))
 
-      region_areas <-
-        sf::st_area(survey_boundaries) / sum(sf::st_area(survey_boundaries))
+      if(nregion > 1)
+      {
+        region_areas <-
+          sf::st_area(survey_boundaries) / sum(sf::st_area(survey_boundaries))
+      }
+      if(nregion == 1)
+      {
+        region_areas = 1
+      }
 
       pred_mod <- data.frame(
         value = as.numeric(pred_mod),
@@ -362,7 +464,7 @@ censored_index_fun_sdmTMB <-
                                                         nyear), times = M)])
       )
 
-      if (!preserve_inter_regional_differences)
+      if (!preserve_inter_regional_differences & nregion > 1)
       {
         # Need to subtract standard error due to intercept region_INLA
         samples_regional <-
@@ -385,7 +487,7 @@ censored_index_fun_sdmTMB <-
             q0.975 = quantile(value, probs = 0.975)
           )
       }
-      if (preserve_inter_regional_differences)
+      if (preserve_inter_regional_differences & nregion > 1)
       {
         samples_regional <-
           pred_mod %>%
@@ -416,7 +518,11 @@ censored_index_fun_sdmTMB <-
         dplyr::summarize(value = sum(value)) %>%
         dplyr::ungroup(year) %>%
         dplyr::group_by(MC_ind) %>%
-        dplyr::mutate(value = value / gm_mean(value))
+        dplyr::mutate(value = ifelse(rep(preserve_inter_regional_differences,
+                                         length(value)),
+                                     value,
+                                     value / gm_mean(value) )
+        )
 
       overall_df <-
         samples_overall %>%
@@ -430,14 +536,30 @@ censored_index_fun_sdmTMB <-
       overall_df$region <- 'All'
       samples_overall$region <- 'All'
 
-      pred_df <-
-        rbind(overall_df[, c('year', 'region', 'mean', 'q0.025', 'q0.975', 'sd')],
-              regional_df[, c('year', 'region', 'mean', 'q0.025', 'q0.975', 'sd')])
+      if(nregion > 1)
+      {
+        pred_df <-
+          rbind(overall_df[, c('year', 'region', 'mean', 'q0.025', 'q0.975', 'sd')],
+                regional_df[, c('year', 'region', 'mean', 'q0.025', 'q0.975', 'sd')])
+      }
+      if(nregion == 1)
+      {
+        pred_df <- overall_df[, c('year', 'region', 'mean', 'q0.025', 'q0.975', 'sd')]
+      }
 
-      trajectory_samples <-
-        rbind(samples_regional[, c('year', 'region', 'value', 'MC_ind')],
-              samples_overall[, c('year', 'region', 'value', 'MC_ind')]) %>%
-        dplyr::filter(MC_ind <= n_trajectories)
+      if(nregion > 1)
+      {
+        trajectory_samples <-
+          rbind(samples_regional[, c('year', 'region', 'value', 'MC_ind')],
+                samples_overall[, c('year', 'region', 'value', 'MC_ind')]) %>%
+          dplyr::filter(MC_ind <= n_trajectories)
+      }
+      if(nregion == 1)
+      {
+        trajectory_samples <-
+          samples_overall[, c('year', 'region', 'value', 'MC_ind')] %>%
+          dplyr::filter(MC_ind <= n_trajectories)
+      }
 
       if (plot)
       {

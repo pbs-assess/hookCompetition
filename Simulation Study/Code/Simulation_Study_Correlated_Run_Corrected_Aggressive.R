@@ -1,14 +1,15 @@
 # Simulation study demonstrating the censored hook competition method
+# In this simulation study, the target species is the most aggressive.
 library(INLA)
 library(ggplot2)
 library(tidyverse)
 library(mgcv)
-seed <- 25042021 # date
+seed <- 25032022 # date
 set.seed(seed)
 nspecies <- 3
 # bite_funs <- cbind(rep('constant',3),
 #                    c('exp_decay','mixed', 'constant'))
-bite_funs <-c('exp_decay','mixed', 'constant')
+bite_funs <- c('constant', 'mixed', 'exp_decay')#c('exp_decay','mixed', 'constant')
 soak_time <- 5
 n_hooks <- 800
 nstation <- 6
@@ -360,6 +361,10 @@ for(nsim in 1:n_sim)
 
               }
             )
+          if(sum(is.na(mod2$summary.fixed$mean))>0)
+          {
+            mod2 <- NULL
+          }
 
           if(!is.null(mod2))
           {
@@ -433,6 +438,10 @@ for(nsim in 1:n_sim)
 
               }
             )
+          if(sum(is.na(mod4$summary.fixed$mean))>0)
+          {
+            mod4 <- NULL
+          }
 
           if(!is.null(mod4))
           {
@@ -552,7 +561,8 @@ for(nsim in 1:n_sim)
                 inla(formula = inla.mdata(cbind(bites,low,high)) ~ factor(station) + f(event_ID, constr=T, model='iid'),
                      family="cenpoisson2",verbose=F,
                      data= dat, control.fixed = list(prec.intercept=1e-1),
-                     control.compute = list(config=T))
+                     control.compute = list(config=T),
+                     control.mode = list(theta=mod2$misc$theta.mode, restart=T))
               },
               error=function(cond)
               {
@@ -562,6 +572,10 @@ for(nsim in 1:n_sim)
 
               }
             )
+          if(sum(is.na(mod6$summary.fixed$mean))>0)
+          {
+            mod6 <- NULL
+          }
 
           if(!is.null(mod6))
           {
@@ -659,7 +673,8 @@ for(nsim in 1:n_sim)
                 inla(formula = inla.mdata(cbind(bites,low,high)) ~ factor(station) + f(event_ID, constr=T, model='iid'),
                      family="cenpoisson2",verbose=F,
                      data= dat, control.fixed = list(prec.intercept=1e-1),
-                     control.compute = list(config=T))
+                     control.compute = list(config=T),
+                     control.mode = list(theta=mod2$misc$theta.mode, restart=T))
               },
               error=function(cond)
               {
@@ -669,6 +684,10 @@ for(nsim in 1:n_sim)
 
               }
             )
+          if(sum(is.na(mod8$summary.fixed$mean))>0)
+          {
+            mod8 <- NULL
+          }
 
           if(!is.null(mod8))
           {
@@ -763,7 +782,8 @@ for(nsim in 1:n_sim)
                   inla(formula = inla.mdata(cbind(bites,low,high)) ~ factor(station) + f(event_ID, constr=T, model='iid'),
                        family="cenpoisson2",verbose=F,
                        data= dat, control.fixed = list(prec.intercept=1e-1),
-                       control.compute = list(config=T))
+                       control.compute = list(config=T),
+                       control.mode = list(theta=mod2$misc$theta.mode, restart=T))
                 },
                 error=function(cond)
                 {
@@ -773,6 +793,10 @@ for(nsim in 1:n_sim)
 
                 }
               )
+            if(sum(is.na(mod10$summary.fixed$mean))>0)
+            {
+              mod10 <- NULL
+            }
 
             if(!is.null(mod10))
             {
@@ -852,7 +876,8 @@ for(nsim in 1:n_sim)
                 inla(formula = inla.mdata(cbind(bites,low,high)) ~ factor(station) + f(event_ID, constr=T, model='iid'),
                      family="cenpoisson2",verbose=F,
                      data= dat, control.fixed = list(prec.intercept=1e-1),
-                     control.compute = list(config=T))
+                     control.compute = list(config=T),
+                     control.mode = list(theta=mod2$misc$theta.mode, restart=T))
               },
               error=function(cond)
               {
@@ -862,6 +887,10 @@ for(nsim in 1:n_sim)
 
               }
             )
+          if(sum(is.na(mod12$summary.fixed$mean))>0)
+          {
+            mod12 <- NULL
+          }
 
           if(!is.null(mod12))
           {
@@ -919,14 +948,14 @@ for(nsim in 1:n_sim)
   }
 }
 
-#saveRDS(Results, 'Simulation_Results_Correlated_Corrected_2.rds')
-Results <- readRDS('Simulation_Results_Correlated_Corrected_2.rds')
+#saveRDS(Results, 'Simulation_Results_Correlated_Corrected_Aggressive.rds')
+Results <- readRDS('./Simulation Study/RDS_Files/Simulation_Results_Correlated_Corrected_Aggressive.rds')
 
 # Create artificial 'relative abundance' of target and aggressive species plots
 rel_abund_dat <- data.frame(expand.grid(
   species=c('target','aggressive'),
   sat_level=factor(c('low','high'), levels=c('low','high'), ordered = T),
-  mean_attract=factor(c('constant','constant','linear','linear')),
+  mean_attract=factor(c('constant','linear')),
   Year=c(1,2,3,4,5,6)))
 rel_abund_dat$Abundance <- 1
 rel_abund_dat$Abundance[rel_abund_dat$species=='target'&
@@ -950,7 +979,6 @@ rel_abund_plot <-
             xmin = -Inf,xmax = Inf,
             ymin = -Inf,ymax = Inf,alpha = 0.3) +
   geom_line() +
-  scale_fill_discrete(labels=c('Target Species', 'Aggressive Species')) +
   facet_grid(mean_attract+sat_level~.,
              labeller = labeller(
                mean_attract = c(
@@ -967,10 +995,10 @@ rel_abund_plot <-
         panel.background = element_blank(), axis.line = element_blank()) +
   guides(fill='none') +
   theme(strip.background = element_blank(),strip.text = element_blank(),
-        legend.position = c(0.45,0.9),legend.box.background=element_blank(),
+        legend.position = c(0.45,0.94),legend.box.background=element_blank(),
         legend.background=element_blank(),
         axis.title.y = element_blank()) +
-  guides(linetype=guide_legend('Species'))
+  guides(linetype=guide_legend('Species Rel. Abundance'))
 
 # Change the factors to ordered factors to improve plotting
 Results$sat_level <- factor(Results$sat_level, levels=c('low','high'), ordered = T)
@@ -978,10 +1006,9 @@ Results$mean_attract <- factor(Results$mean_attract, levels=c('constant','linear
 Results$correlation <- factor(Results$correlation, levels=c('negative','low','medium','high'), ordered = T)
 Results$model <- factor(Results$model, levels=c('naive','adjust','censored','censored_upper100','censored_upper95','censored_upper85'), ordered = T)
 
-# THESE ARE DESIGNED FOR A4 LANDSCAPE (or 5.83 x 11)
+# THESE ARE DESIGNED FOR A4 LANDSCAPE
 # NOTICE THE HACK IN MULTIPLOT'S LAYOUT ARGUMENT
 multiplot(
-  rel_abund_plot + ggtitle('Simulated Abundance'),
   Results %>%
     group_by(sat_level, mean_attract, correlation, nsim) %>%
     mutate(all_converged = mean(Converge)) %>%
@@ -1020,21 +1047,21 @@ multiplot(
                )) +
     geom_hline(yintercept=0) +
     ggtitle('Bias in Relative Abundance Indices vs Method',
-            subtitle = 'Rows are trends in relative abundance of target species and the average degree of hook saturation.\nColumns are correlation of target species\' abundance with saturation events.') +
+            subtitle = 'Rows are trends in relative abundance of target species and the average degree of hook saturation,\nColumns are correlation of target species\' abundance with saturation events') +
     ylab('Bias in Relative Abundance Index') +
     xlab('Year') + guides(fill='none') +
     scale_fill_brewer(palette = 'Pastel1') +
     theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
           panel.background = element_blank(), axis.line = element_blank(),
-          legend.position = 'left', strip.text.y = element_blank()) +
-    scale_color_viridis_d(labels=c('CPUE','ICR','Censored','Censored Adj')) +
-    scale_shape_manual(labels=c('CPUE','ICR','Censored','Censored Adj'),
+          legend.position = 'right') +
+    scale_color_viridis_d(labels=c('Naive','Adjusted','Censored','Censored Adj')) +
+    scale_shape_manual(labels=c('Naive','Adjusted','Censored','Censored Adj'),
                        values=c('circle','triangle','square','square')) +
-    guides(color=guide_legend(override.aes=list(fill=NA)))+ labs(colour='Model', shape='Model'),
-  layout = matrix(c(rep(NA,51),rep(1,449),rep(2,2000)), nrow = 500, ncol = 5, byrow = F))
+    guides(color=guide_legend(override.aes=list(fill=NA))),
+  rel_abund_plot,
+  layout = matrix(c(rep(1,2000),rep(NA,55), rep(2,445)), nrow = 500, ncol = 5, byrow = F))
 
 multiplot(
-  rel_abund_plot + ggtitle('Simulated Abundance'),
   Results %>%
     group_by(sat_level, mean_attract, correlation, nsim) %>%
     mutate(all_converged = mean(Converge)) %>%
@@ -1073,21 +1100,21 @@ multiplot(
                )) +
     geom_hline(yintercept=0) +
     ggtitle('MSE in Relative Abundance Indices vs Method',
-            subtitle = 'Rows are trends in relative abundance of target species and the average degree of hook saturation.\nColumns are correlation of target species\' abundance with saturation events.') +
+            subtitle = 'Rows are trends in relative abundance of target species and the average degree of hook saturation,\nColumns are correlation of target species\' abundance with saturation events') +
     ylab('MSE in Relative Abundance Index') +
     xlab('Year') + guides(fill='none') +
     scale_fill_brewer(palette = 'Pastel1') +
     theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
           panel.background = element_blank(), axis.line = element_blank(),
-          legend.position = 'left', strip.text.y = element_blank()) +
-    scale_color_viridis_d(labels=c('CPUE','ICR','Censored','Censored Adj')) +
-    scale_shape_manual(labels=c('CPUE','ICR','Censored','Censored Adj'),
+          legend.position = 'right') +
+    scale_color_viridis_d(labels=c('Naive','Adjusted','Censored','Censored Adj')) +
+    scale_shape_manual(labels=c('Naive','Adjusted','Censored','Censored Adj'),
                        values=c('circle','triangle','square','square')) +
-    guides(color=guide_legend(override.aes=list(fill=NA)))+ labs(colour='Model', shape='Model'),
-  layout = matrix(c(rep(NA,55),rep(1,445),rep(2,2000)), nrow = 500, ncol = 5, byrow = F))
+    guides(color=guide_legend(override.aes=list(fill=NA))),
+  rel_abund_plot,
+  layout = matrix(c(rep(1,2000),rep(NA,55), rep(2,445)), nrow = 500, ncol = 5, byrow = F))
 
 multiplot(
-  rel_abund_plot + ggtitle('Simulated Abundance'),
   Results %>%
     group_by(sat_level, mean_attract, correlation, nsim) %>%
     mutate(all_converged = mean(Converge)) %>%
@@ -1126,21 +1153,21 @@ multiplot(
                )) +
     geom_hline(yintercept=0) +
     ggtitle('MSE in Relative Abundance Indices vs Method',
-            subtitle = 'Rows are trends in relative abundance of target species and the average degree of hook saturation.\nColumns are correlation of target species\' abundance with saturation events.') +
+            subtitle = 'Rows are trends in relative abundance of target species and the average degree of hook saturation,\nColumns are correlation of target species\' abundance with saturation events') +
     ylab('MSE in Relative Abundance Index') +
     xlab('Year') + guides(fill='none') +
     scale_fill_brewer(palette = 'Pastel1') +
     theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
           panel.background = element_blank(), axis.line = element_blank(),
-          legend.position = 'left', strip.text.y = element_blank()) +
+          legend.position = 'right') +
     scale_color_viridis_d(labels=c('Adjusted','Censored','Censored Adj')) +
     scale_shape_manual(labels=c('Adjusted','Censored','Censored Adj'),
                        values=c('triangle','square','square')) +
-    guides(color=guide_legend(override.aes=list(fill=NA)))+ labs(colour='Model', shape='Model'),
-  layout = matrix(c(rep(NA,55),rep(1,445),rep(2,2000)), nrow = 500, ncol = 5, byrow = F))
+    guides(color=guide_legend(override.aes=list(fill=NA))),
+  rel_abund_plot,
+  layout = matrix(c(rep(1,2000),rep(NA,55), rep(2,445)), nrow = 500, ncol = 5, byrow = F))
 
 multiplot(
-  rel_abund_plot + ggtitle('Simulated Abundance'),
   Results %>%
     group_by(sat_level, mean_attract, correlation, nsim) %>%
     mutate(all_converged = mean(Converge)) %>%
@@ -1179,22 +1206,22 @@ multiplot(
                )) +
     geom_hline(yintercept=0.95) +
     ggtitle('Coverage of 95% Credible Intervals of Relative Abundance vs Method',
-            subtitle = 'Rows are trends in relative abundance of target species and the average degree of hook saturation.\nColumns are correlation of target species\' abundance with saturation events.') +
+            subtitle = 'Rows are trends in relative abundance of target species and the average degree of hook saturation,\nColumns are correlation of target species\' abundance with saturation events') +
     ylab('Coverage of 95% Credible Intervals') +
     xlab('Year') + guides(fill='none') +
     scale_fill_brewer(palette = 'Pastel1') +
     theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
           panel.background = element_blank(), axis.line = element_blank(),
-          legend.position = 'left', strip.text.y = element_blank()) +
-    scale_color_viridis_d(labels=c('CPUE','ICR','Censored','Censored Adj')) +
-    scale_shape_manual(labels=c('CPUE','ICR','Censored','Censored Adj'),
+          legend.position = 'right') +
+    scale_color_viridis_d(labels=c('Naive','Adjusted','Censored','Censored Adj')) +
+    scale_shape_manual(labels=c('Naive','Adjusted','Censored','Censored Adj'),
                        values=c('circle','triangle','square','square')) +
-    guides(color=guide_legend(override.aes=list(fill=NA)))+ labs(colour='Model', shape='Model'),
-  layout = matrix(c(rep(NA,55),rep(1,445),rep(2,2000)), nrow = 500, ncol = 5, byrow = F))
+    guides(color=guide_legend(override.aes=list(fill=NA))),
+  rel_abund_plot,
+  layout = matrix(c(rep(1,2000),rep(NA,55), rep(2,445)), nrow = 500, ncol = 5, byrow = F))
 
 ## Try aggregating over the years
 multiplot(
-  rel_abund_plot + ggtitle('Simulated Abundance'),
   Results %>%
     group_by(sat_level, mean_attract, correlation, nsim) %>%
     mutate(all_converged = mean(Converge)) %>%
@@ -1233,22 +1260,22 @@ multiplot(
                )) +
     geom_hline(yintercept=0) +
     ggtitle('Bias in Relative Abundance Indices Across Years 2-6 vs Method',
-            subtitle = 'Rows are trends in relative abundance of target species and the average degree of hook saturation,\nX-axis values are correlation of target species\' abundance with saturation events.') +
+            subtitle = 'Rows are trends in relative abundance of target species and the average degree of hook saturation,\nX-axis values are correlation of target species\' abundance with saturation events') +
     ylab('Bias in Relative Abundance Index') +
     xlab('Correlation') + guides(fill='none') +
     scale_fill_brewer(palette = 'Pastel1') +
     theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
           panel.background = element_blank(), axis.line = element_blank(),
-          legend.position = 'left', strip.text.y = element_blank()) +
-    scale_color_viridis_d(labels=c('CPUE','ICR','Censored','Censored Adj')) +
-    scale_shape_manual(labels=c('CPUE','ICR','Censored','Censored Adj'),
+          legend.position = 'right') +
+    scale_color_viridis_d(labels=c('Naive','Adjusted','Censored','Censored Adj')) +
+    scale_shape_manual(labels=c('Naive','Adjusted','Censored','Censored Adj'),
                        values=c('circle','triangle','square','square')) +
-    guides(color=guide_legend(override.aes=list(fill=NA)))+ labs(colour='Model', shape='Model'),
-  layout = matrix(c(rep(NA,55),rep(1,445),rep(2,2000)), nrow = 500, ncol = 5, byrow = F))
+    guides(color=guide_legend(override.aes=list(fill=NA))),
+  rel_abund_plot,
+  layout = matrix(c(rep(1,2000),rep(NA,40), rep(2,460)), nrow = 500, ncol = 5, byrow = F))
 
 
 multiplot(
-  rel_abund_plot + ggtitle('Simulated Abundance'),
   Results %>%
     group_by(sat_level, mean_attract, correlation, nsim) %>%
     mutate(all_converged = mean(Converge)) %>%
@@ -1287,18 +1314,19 @@ multiplot(
                )) +
     geom_hline(yintercept=0) +
     ggtitle('MSE in Relative Abundance Indices Across Years 2-6 vs Method',
-            subtitle = 'Rows are trends in relative abundance of target species and the average degree of hook saturation,\nX-axis values are correlation of target species\' abundance with saturation events.') +
+            subtitle = 'Rows are trends in relative abundance of target species and the average degree of hook saturation,\nX-axis values are correlation of target species\' abundance with saturation events') +
     ylab('MSE in Relative Abundance Index') +
     xlab('Correlation') + guides(fill='none') +
     scale_fill_brewer(palette = 'Pastel1') +
     theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
           panel.background = element_blank(), axis.line = element_blank(),
-          legend.position = 'left', strip.text.y = element_blank()) +
-    scale_color_viridis_d(labels=c('CPUE','ICR','Censored','Censored Adj')) +
-    scale_shape_manual(labels=c('CPUE','ICR','Censored','Censored Adj'),
+          legend.position = 'right') +
+    scale_color_viridis_d(labels=c('Naive','Adjusted','Censored','Censored Adj')) +
+    scale_shape_manual(labels=c('Naive','Adjusted','Censored','Censored Adj'),
                        values=c('circle','triangle','square','square')) +
-    guides(color=guide_legend(override.aes=list(fill=NA)))+ labs(colour='Model', shape='Model'),
-  layout = matrix(c(rep(NA,55),rep(1,445),rep(2,2000)), nrow = 500, ncol = 5, byrow = F))
+    guides(color=guide_legend(override.aes=list(fill=NA))),
+  rel_abund_plot,
+  layout = matrix(c(rep(1,2000),rep(NA,40), rep(2,460)), nrow = 500, ncol = 5, byrow = F))
 
 multiplot(
   Results %>%
@@ -1339,7 +1367,7 @@ multiplot(
                )) +
     geom_hline(yintercept=0) +
     ggtitle('MSE in Relative Abundance Indices Across Years 2-6 vs Method',
-            subtitle = 'Rows are trends in relative abundance of target species and the average degree of hook saturation,\nX-axis values are correlation of target species\' abundance with saturation events.') +
+            subtitle = 'Rows are trends in relative abundance of target species and the average degree of hook saturation,\nX-axis values are correlation of target species\' abundance with saturation events') +
     ylab('MSE in Relative Abundance Index') +
     xlab('Correlation') + guides(fill='none') +
     scale_fill_brewer(palette = 'Pastel1') +
@@ -1349,12 +1377,11 @@ multiplot(
     scale_color_viridis_d(labels=c('Adjusted','Censored','Censored Adj')) +
     scale_shape_manual(labels=c('Adjusted','Censored','Censored Adj'),
                        values=c('triangle','square','square')) +
-    guides(color=guide_legend(override.aes=list(fill=NA)))+ labs(colour='Model', shape='Model'),
+    guides(color=guide_legend(override.aes=list(fill=NA))),
   rel_abund_plot,
   layout = matrix(c(rep(1,2000),rep(NA,40), rep(2,460)), nrow = 500, ncol = 5, byrow = F))
 
 multiplot(
-  rel_abund_plot + ggtitle('Simulated Abundance'),
   Results %>%
     group_by(sat_level, mean_attract, correlation, nsim) %>%
     mutate(all_converged = mean(Converge)) %>%
@@ -1394,18 +1421,19 @@ multiplot(
                )) +
     geom_hline(yintercept=0.95) +
     ggtitle('Coverage in Credible Intervals of Relative Abundance in Year 6 vs Method',
-            subtitle = 'Rows are trends in relative abundance of target species and the average degree of hook saturation.\nX-axis values are correlation of target species\' abundance with saturation events.') +
+            subtitle = 'Rows are trends in relative abundance of target species and the average degree of hook saturation,\nX-axis values are correlation of target species\' abundance with saturation events') +
     ylab('Coverage in Year 6 Credible Intervals of Relative Abundance') +
     xlab('Correlation') + guides(fill='none') +
     scale_fill_brewer(palette = 'Pastel1') +
     theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
           panel.background = element_blank(), axis.line = element_blank(),
-          legend.position = 'left', strip.text.y = element_blank()) +
-    scale_color_viridis_d(labels=c('CPUE','ICR','Censored','Censored Adj')) +
-    scale_shape_manual(labels=c('CPUE','ICR','Censored','Censored Adj'),
+          legend.position = 'right') +
+    scale_color_viridis_d(labels=c('Naive','Adjusted','Censored','Censored Adj')) +
+    scale_shape_manual(labels=c('Naive','Adjusted','Censored','Censored Adj'),
                        values=c('circle','triangle','square','square')) +
-    guides(color=guide_legend(override.aes=list(fill=NA)))+ labs(colour='Model', shape='Model'),
-  layout = matrix(c(rep(NA,48),rep(1,452),rep(2,2000)), nrow = 500, ncol = 5, byrow = F))
+    guides(color=guide_legend(override.aes=list(fill=NA))),
+  rel_abund_plot,
+  layout = matrix(c(rep(1,2000),rep(NA,40), rep(2,460)), nrow = 500, ncol = 5, byrow = F))
 
 ## Create a summary plot showing the convergence, MSE and coverage of competing methods
 multiplot(
@@ -1644,8 +1672,6 @@ multiplot(
     guides(color='none', model='none', shape='none'),
   cols=1)
 
-multiplot(
-  rel_abund_plot + ggtitle('Simulated Abundance'),
 Results %>%
   filter(Station>1, !(model %in% c('naive','adjust') ) )%>%
   group_by(model, correlation,  sat_level, mean_attract) %>%
@@ -1664,35 +1690,18 @@ Results %>%
             ymin = -Inf,ymax = Inf,alpha = 0.3) +
   #geom_errorbar(position = position_dodge(width=0.3)) +
   geom_point(position = position_dodge(width=0.3)) +
-  facet_grid(mean_attract + sat_level ~ correlation,
-             labeller = labeller(
-               correlation=c(
-                 negative = 'negative correlation',
-                 low = 'low positive correlation',
-                 medium = 'med positive correlation',
-                 high = 'high positive correlation'
-               ),
-               mean_attract = c(
-                 constant = 'constant target species \nabundance',
-                 linear = 'linearly increasing target \nspecies abundance '
-               ),
-               sat_level = c(
-                 low = 'saturation less "common"',
-                 high = 'saturation "common"'
-               ))) +
+  facet_grid(mean_attract + sat_level ~ correlation) +
   ylab('Convergence Proportion') +
   ggtitle('Proportion of 100 Simulations That Converged vs Method',
-          subtitle = 'Rows are degree of saturation and trend in relative abundance columns are correlation of target species\' abundance with\nsaturation events. Dashed black line indicates proportion of converged simulations with 85% bait removal and dotted red\nline indicates proportion of converged simulations with 100% bait removal.') +
-  xlab('Model') +  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
+          subtitle = 'Rows are degree of saturation and trend in relative abundance,\nColumns are correlation of target species\' abundance with saturation events \nDashed black line indicates proportion of converged simulations with 85% bait removal \nDotted red line indicates proportion of converged simulations with 100% bait removal') +
+  xlab('Year') +  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
   geom_hline(aes(yintercept=Mean), linetype='dashed', colour='black') +
   geom_hline(aes(yintercept=Mean2), linetype='dotted', colour='red') +
   geom_hline(yintercept = 1, linetype='solid', colour='black') +
-  scale_x_discrete(labels=c("censored" = "Censored", "censored_upper100" = "Censored QMax",
-                            "censored_upper95" = "Censored Q95","censored_upper85" = "Censored Q85 \n'Censored Adj'")) +
+  scale_x_discrete(labels=c("censored" = "Censored", "censored_upper100" = "Censored qMax",
+                            "censored_upper95" = "Censored q95","censored_upper85" = "Censored q85 \n'Censored Adj'")) +
   guides(colour='none', fill='none') +
-  scale_fill_brewer(palette = 'Pastel1') +
-  theme(strip.text.y = element_blank()),
-layout = matrix(c(rep(NA,60),rep(1,385),rep(NA,55),rep(2,2000)), nrow = 500, ncol = 5, byrow = F))
+  scale_fill_brewer(palette = 'Pastel1')
 
 Results %>%
   group_by(sat_level, mean_attract, correlation, nsim) %>%
@@ -1778,7 +1787,7 @@ Results_Correlated %>%
   facet_grid(sat_level+mean_attract ~ correlation, scales = 'free_y') +
   geom_hline(yintercept=0) +
   ggtitle('MSE in Relative Abundance Indices vs Convergence of Censored Poisson Estimators',
-          subtitle = 'Rows are degree of saturation and trend in relative abundance,\nColumns are correlation of target species\' abundance with saturation events.') +
+          subtitle = 'Rows are degree of saturation and trend in relative abundance,\nColumns are correlation of target species\' abundance with saturation events') +
   ylab('MSE in Relative Abundance Index') +
   xlab('Year')
 
@@ -1841,7 +1850,7 @@ Results %>%
   facet_grid(mean_attract + sat_level ~ correlation, scales = 'free_y') +
   geom_hline(yintercept=0) +
   ggtitle('Bias in Relative Abundance Indices vs Method',
-          subtitle = 'Rows are degree of saturation and trend in relative abundance,\nColumns are correlation of target species\' abundance with saturation events.') +
+          subtitle = 'Rows are degree of saturation and trend in relative abundance,\nColumns are correlation of target species\' abundance with saturation events') +
   ylab('Bias in Relative Abundance Index') +
   xlab('Year') +  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))
 
@@ -1863,7 +1872,7 @@ Results %>%
   facet_grid(correlation ~sat_level + mean_attract) +
   geom_hline(yintercept=0) +
   ggtitle('Bias in Relative Abundance Indices vs Method',
-          subtitle = 'Columns are degree of saturation and trend in relative abundance,\nRows are correlation of target species\' abundance with saturation events.') +
+          subtitle = 'Columns are degree of saturation and trend in relative abundance,\nRows are correlation of target species\' abundance with saturation events') +
   ylab('Bias in Relative Abundance Index') +
   xlab('Year')
 
@@ -1906,7 +1915,7 @@ Results %>%
   facet_grid(correlation ~sat_level + mean_attract) +
   geom_hline(yintercept=0) +
   ggtitle('Absolute Error in Relative Abundance Indices vs Method',
-          subtitle = 'Columns are degree of saturation and trend in relative abundance,\nRows are correlation of target species\' abundance with saturation events.') +
+          subtitle = 'Columns are degree of saturation and trend in relative abundance,\nRows are correlation of target species\' abundance with saturation events') +
   ylab('Absolute Value of Error in Relative Abundance Index') +
   xlab('Model')
 
@@ -1948,7 +1957,7 @@ Results %>%
   facet_grid(correlation~sat_level) +
   geom_hline(yintercept=0) +
   ggtitle('Mean Squared Error in Relative Abundance Indices vs Method',
-          subtitle = 'Relative Abundance Constant Across Time \nColumns are degree of saturation,\nRows are correlation of target species\' abundance with saturation events.') +
+          subtitle = 'Relative Abundance Constant Across Time \nColumns are degree of saturation,\nRows are correlation of target species\' abundance with saturation events') +
   ylab('Mean Squared Error in Relative Abundance Index') +
   xlab('Model') +  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))
 
@@ -1969,7 +1978,7 @@ Results %>%
   facet_grid(correlation~sat_level) +
   geom_hline(yintercept=0) +
   ggtitle('Mean Squared Error in Relative Abundance Indices vs Adjusted Methods',
-          subtitle = 'Relative Abundance Constant Across Time \nColumns are degree of saturation,\nRows are correlation of target species\' abundance with saturation events.') +
+          subtitle = 'Relative Abundance Constant Across Time \nColumns are degree of saturation,\nRows are correlation of target species\' abundance with saturation events') +
   ylab('Mean Squared Error in Relative Abundance Index') +
   xlab('Model') +  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))
 
@@ -1991,7 +2000,7 @@ Results %>%
   facet_grid(correlation~sat_level) +
   geom_hline(yintercept=0) +
   ggtitle('Mean Squared Error in Relative Abundance Indices vs Adjusted Methods',
-          subtitle = 'Relative Abundance Constant Across Time \nColumns are degree of saturation,\nRows are correlation of target species\' abundance with saturation events.') +
+          subtitle = 'Relative Abundance Constant Across Time \nColumns are degree of saturation,\nRows are correlation of target species\' abundance with saturation events') +
   ylab('Mean Squared Error in Relative Abundance Index') +
   xlab('Model') +  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))
 
@@ -2012,7 +2021,7 @@ Results %>%
   facet_grid(correlation~sat_level) +
   geom_hline(yintercept=0) +
   ggtitle('Mean Squared Error in Relative Abundance Indices vs Method',
-          subtitle = 'Relative Abundance Increasing Across Time \nColumns are degree of saturation,\nRows are correlation of target species\' abundance with saturation events.') +
+          subtitle = 'Relative Abundance Increasing Across Time \nColumns are degree of saturation,\nRows are correlation of target species\' abundance with saturation events') +
   ylab('Mean Squared Error in Relative Abundance Index') +
   xlab('Model') +  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))
 
@@ -2033,7 +2042,7 @@ Results %>%
   facet_grid(correlation~sat_level) +
   geom_hline(yintercept=0) +
   ggtitle('Mean Squared Error in Relative Abundance Indices vs Adjusted Methods',
-          subtitle = 'Relative Abundance Increasing Across Time \nColumns are degree of saturation,\nRows are correlation of target species\' abundance with saturation events.') +
+          subtitle = 'Relative Abundance Increasing Across Time \nColumns are degree of saturation,\nRows are correlation of target species\' abundance with saturation events') +
   ylab('Mean Squared Error in Relative Abundance Index') +
   xlab('Model') +  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))
 
@@ -2055,7 +2064,7 @@ Results %>%
   facet_grid(correlation~sat_level) +
   geom_hline(yintercept=0) +
   ggtitle('Mean Squared Error in Relative Abundance Indices vs Adjusted Methods',
-          subtitle = 'Relative Abundance Constant Across Time \nColumns are degree of saturation,\nRows are correlation of target species\' abundance with saturation events.') +
+          subtitle = 'Relative Abundance Constant Across Time \nColumns are degree of saturation,\nRows are correlation of target species\' abundance with saturation events') +
   ylab('Mean Squared Error in Relative Abundance Index') +
   xlab('Model') +  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))
 
@@ -2077,7 +2086,7 @@ Results %>%
   facet_grid(sat_level + mean_attract ~ correlation, scales='free_y') +
   geom_hline(yintercept=0) +
   ggtitle('Mean Squared Error in Relative Abundance Indices vs Adjusted Methods',
-          subtitle = 'Relative Abundance Constant Across Time \nRows are degree of saturation,\nColumns are correlation of target species\' abundance with saturation events.') +
+          subtitle = 'Relative Abundance Constant Across Time \nRows are degree of saturation,\nColumns are correlation of target species\' abundance with saturation events') +
   ylab('Mean Squared Error in Relative Abundance Index') +
   xlab('Model') +  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))
 
@@ -2098,7 +2107,7 @@ Results %>%
   facet_grid(sat_level + mean_attract ~ correlation, scales='free_y') +
   geom_hline(yintercept=0) +
   ggtitle('Mean Squared Error in Relative Abundance Indices vs Adjusted Methods',
-          subtitle = 'Relative Abundance Constant Across Time \nRows are degree of saturation,\nColumns are correlation of target species\' abundance with saturation events.') +
+          subtitle = 'Relative Abundance Constant Across Time \nRows are degree of saturation,\nColumns are correlation of target species\' abundance with saturation events') +
   ylab('Mean Squared Error in Relative Abundance Index') +
   xlab('Model') +  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))
 
@@ -2119,7 +2128,7 @@ Results %>%
 #   facet_grid(correlation~sat_level + mean_attract) +
 #   geom_hline(yintercept=0) +
 #   ggtitle('Mean Squared Error in Relative Abundance Indices vs Adjusted Methods',
-#           subtitle = 'Columns are degree of saturation and trend in relative abundance,\nRows are correlation of target species\' abundance with saturation events.') +
+#           subtitle = 'Columns are degree of saturation and trend in relative abundance,\nRows are correlation of target species\' abundance with saturation events') +
 #   ylab('Mean Squared Error in Relative Abundance Index') +
 #   xlab('Model')
 
@@ -2157,7 +2166,7 @@ Results %>%
 #   facet_grid(correlation ~sat_level + mean_attract) +
 #   geom_hline(yintercept = 0.95) +
 #   ggtitle('Coverage of Intervals of Relative Abundance Indices vs Method',
-#           subtitle = 'Columns are degree of saturation and trend in relative abundance,\nRows are correlation of target species\' abundance with saturation events.') +
+#           subtitle = 'Columns are degree of saturation and trend in relative abundance,\nRows are correlation of target species\' abundance with saturation events') +
 #   ylab('Coverage of intervals of Relative Abundance') +
 #   xlab('Model')
 
@@ -2195,7 +2204,7 @@ Results %>%
   facet_grid(correlation ~sat_level + mean_attract) +
   geom_hline(yintercept = 0.95) +
   ggtitle('Coverage of Intervals of Relative Abundance Indices vs Method',
-          subtitle = 'Columns are degree of saturation and trend in relative abundance,\nRows are correlation of target species\' abundance with saturation events.') +
+          subtitle = 'Columns are degree of saturation and trend in relative abundance,\nRows are correlation of target species\' abundance with saturation events') +
   ylab('Coverage of intervals of Relative Abundance') +
   xlab('Year')
 
@@ -2214,7 +2223,7 @@ Results %>%
   facet_grid(sat_level + mean_attract ~ correlation) +
   geom_hline(yintercept = 0.95) +
   ggtitle('Coverage of Intervals of Relative Abundance Indices vs Method',
-          subtitle = 'Rows are degree of saturation and trend in relative abundance,\nColumns are correlation of target species\' abundance with saturation events.') +
+          subtitle = 'Rows are degree of saturation and trend in relative abundance,\nColumns are correlation of target species\' abundance with saturation events') +
   ylab('Coverage of intervals of Relative Abundance') +
   xlab('Model') +  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))
 
