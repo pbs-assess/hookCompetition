@@ -1,10 +1,11 @@
 library(sf)
 library(rgeos)
 library(tidyverse)
-COAST <- readOGR("~/OneDrive - The University Of British Columbia/Whale Project/Data for Joe/Coast shapefile",
-layer="coast_ALBERS")
-COAST <- rgeos::gSimplify(COAST, tol=1000)
-load("~/Documents/hookCompetition/data/yelloweye_rockfish.rda")
+# COAST <- readOGR("~/OneDrive - The University Of British Columbia/Whale Project/Data for Joe/Coast shapefile",
+# layer="coast_ALBERS")
+# COAST <- rgeos::gSimplify(COAST, tol=1000)
+COAST <- readRDS('Hires_BC_Coastline.rds')
+load("C:/Users/WATSONJOE/OneDrive - DFO-MPO/Documents/hookcompetition/data/yelloweye_rockfish.rda")
 # Convert to sf format
 stations <- yelloweye_rockfish$set_counts
 stations <-
