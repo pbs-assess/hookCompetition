@@ -129,7 +129,7 @@ Results <- data.frame(
   correlation = rep(rep(c('negative','low','medium','high'),times=n_sim*2*2), each=6*nstation),
   #sat_effects = rep(rep(c('no saturation','saturation'),times=n_sim*2*2), each=2*4*nstation),
   #bite_fun = rep(rep(c('constant','mixed'), times=n_sim*2*2*2), each=4*nstation),
-  model=rep(rep(c('naive','adjust','censored_upper85','censored_upper95','censored_upper100','censored'), times=n_sim*2*2*4), each=nstation),
+  model=rep(rep(c('naive','adjust','censored_upper85','censored','censored_upper85_cprop1','censored_cprop1'), times=n_sim*2*2*4), each=nstation),
   Bias=rep(0, times=n_sim*2*2*4*6*nstation),
   Converge=rep(0, times=n_sim*2*2*4*6*nstation),
   RMSE=rep(0, times=n_sim*2*2*4*6*nstation),
@@ -335,10 +335,10 @@ for(nsim in 1:n_sim)
           Results[results_mapper(nsim,i,j,k,'naive'),'Prop_Sat_100'] <- as.numeric(by(nbite, nbite$station, FUN=function(x){mean(x$prop_sat==1)}))
           Results[results_mapper(nsim,i,j,k,'adjust'),'Prop_Sat_100'] <- as.numeric(by(nbite, nbite$station, FUN=function(x){mean(x$prop_sat==1)}))
           Results[results_mapper(nsim,i,j,k,'censored_upper85'),'Prop_Sat_100'] <- as.numeric(by(nbite, nbite$station, FUN=function(x){mean(x$prop_sat==1)}))
-          Results[results_mapper(nsim,i,j,k,'censored_upper95'),'Prop_Sat_100'] <- as.numeric(by(nbite, nbite$station, FUN=function(x){mean(x$prop_sat==1)}))
-          Results[results_mapper(nsim,i,j,k,'censored_upper95'),'Prop_Sat_85'] <- as.numeric(by(nbite, nbite$station, FUN=function(x){mean(x$prop_sat>cprop)}))
-          Results[results_mapper(nsim,i,j,k,'censored_upper100'),'Prop_Sat_100'] <- as.numeric(by(nbite, nbite$station, FUN=function(x){mean(x$prop_sat==1)}))
-          Results[results_mapper(nsim,i,j,k,'censored_upper100'),'Prop_Sat_85'] <- as.numeric(by(nbite, nbite$station, FUN=function(x){mean(x$prop_sat>cprop)}))
+          Results[results_mapper(nsim,i,j,k,'censored_upper85_cprop1'),'Prop_Sat_100'] <- as.numeric(by(nbite, nbite$station, FUN=function(x){mean(x$prop_sat==1)}))
+          Results[results_mapper(nsim,i,j,k,'censored_upper85_cprop1'),'Prop_Sat_85'] <- as.numeric(by(nbite, nbite$station, FUN=function(x){mean(x$prop_sat>cprop)}))
+          Results[results_mapper(nsim,i,j,k,'censored_cprop1'),'Prop_Sat_100'] <- as.numeric(by(nbite, nbite$station, FUN=function(x){mean(x$prop_sat==1)}))
+          Results[results_mapper(nsim,i,j,k,'censored_cprop1'),'Prop_Sat_85'] <- as.numeric(by(nbite, nbite$station, FUN=function(x){mean(x$prop_sat>cprop)}))
           Results[results_mapper(nsim,i,j,k,'censored'),'Prop_Sat_100'] <- as.numeric(by(nbite, nbite$station, FUN=function(x){mean(x$prop_sat==1)}))
           Results[results_mapper(nsim,i,j,k,'censored'),'Prop_Sat_85'] <- as.numeric(by(nbite, nbite$station, FUN=function(x){mean(x$prop_sat>cprop)}))
 
@@ -361,7 +361,7 @@ for(nsim in 1:n_sim)
 
               }
             )
-          if(sum(is.na(mod2$summary.fixed$mean))>0)
+          if(sum(is.na(mod2$summary.fixed$mean))>0 | mod2$misc$mode.status!=0 )
           {
             mod2 <- NULL
           }
@@ -438,7 +438,7 @@ for(nsim in 1:n_sim)
 
               }
             )
-          if(sum(is.na(mod4$summary.fixed$mean))>0)
+          if(sum(is.na(mod4$summary.fixed$mean))>0 | mod4$misc$mode.status!=0 )
           {
             mod4 <- NULL
           }
@@ -562,7 +562,7 @@ for(nsim in 1:n_sim)
                      family="cenpoisson2",verbose=F,
                      data= dat, control.fixed = list(prec.intercept=1e-1),
                      control.compute = list(config=T),
-                     control.mode = list(theta=mod2$misc$theta.mode, restart=T))
+                     control.mode = list(result=mod2, restart=T))
               },
               error=function(cond)
               {
@@ -572,7 +572,7 @@ for(nsim in 1:n_sim)
 
               }
             )
-          if(sum(is.na(mod6$summary.fixed$mean))>0)
+          if(sum(is.na(mod6$summary.fixed$mean))>0 | mod6$misc$mode.status!=0 )
           {
             mod6 <- NULL
           }
@@ -624,11 +624,6 @@ for(nsim in 1:n_sim)
           dat$low <- rep(Inf,dim(dat)[1])
           dat$high <- rep(Inf,dim(dat)[1])
 
-          quant_regions <-
-            as.numeric(by(dat$bites,
-                          dat$station,
-                          FUN = function(x){quantile(x,0.95, na.rm=T)}, simplify = T))
-
           quant_regions2 <- rep(0, nstation)
           #  as.numeric(by(dat$bites,
           #                dat$station,
@@ -638,29 +633,13 @@ for(nsim in 1:n_sim)
 
           #upper_bound <- pmin( round(upper_bound), quant_regions[dat$station]-dat$bites)
 
-          dat$low[which(dat$prop_sat >= cprop &
-                          0 < upper_bound &
+          dat$low[which(dat$prop_sat >= 1 &
                           dat$bites <= quant_regions[dat$station] &
                           dat$bites >= quant_regions2[dat$station])] <-
-            as.matrix(dat[which(dat$prop_sat >= cprop &
-                                  0 < upper_bound &
+            as.matrix(dat[which(dat$prop_sat >= 1 &
                                   dat$bites <= quant_regions[dat$station] &
                                   dat$bites >= quant_regions2[dat$station]),
                           c('bites')])[,1]
-
-          dat$high[which(dat$prop_sat >= cprop &
-                           0 < upper_bound &
-                           dat$bites <= quant_regions[dat$station] &
-                           dat$bites >= quant_regions2[dat$station])] <-
-            dat$bites[which(dat$prop_sat >= cprop &
-                              0 < upper_bound &
-                              dat$bites <= quant_regions[dat$station] &
-                              dat$bites >= quant_regions2[dat$station])] +
-            upper_bound[which(dat$prop_sat >= cprop &
-                                0 < upper_bound &
-                                dat$bites <= quant_regions[dat$station] &
-                                dat$bites >= quant_regions2[dat$station])]
-
 
           ind_resp <- which(names(dat) %in% c('bites', 'low', 'high'))
 
@@ -674,7 +653,7 @@ for(nsim in 1:n_sim)
                      family="cenpoisson2",verbose=F,
                      data= dat, control.fixed = list(prec.intercept=1e-1),
                      control.compute = list(config=T),
-                     control.mode = list(theta=mod2$misc$theta.mode, restart=T))
+                     control.mode = list(result=mod2, restart=T))
               },
               error=function(cond)
               {
@@ -684,14 +663,14 @@ for(nsim in 1:n_sim)
 
               }
             )
-          if(sum(is.na(mod8$summary.fixed$mean))>0)
+          if(sum(is.na(mod8$summary.fixed$mean))>0 | mod8$misc$mode.status!=0 )
           {
             mod8 <- NULL
           }
 
           if(!is.null(mod8))
           {
-            Results[results_mapper(nsim,i,j,k,'censored_upper95'),'Converge'] <- 1
+            Results[results_mapper(nsim,i,j,k,'censored_upper85_cprop1'),'Converge'] <- 1
 
             parameters <- inla.posterior.sample(5000,mod8,
                                                 selection = list(`(Intercept)` = 0,
@@ -710,22 +689,22 @@ for(nsim in 1:n_sim)
             }))
             colnames(parameters)=c('LCL', 'Median','UCL')
 
-            Results[results_mapper(nsim,i,j,k,'censored_upper95'),'Rel_Bias'][-1] <-
+            Results[results_mapper(nsim,i,j,k,'censored_upper85_cprop1'),'Rel_Bias'][-1] <-
               parameters[2:6,2] -
               mean_bite[-1,3]/mean_bite[1,3]
 
-            Results[results_mapper(nsim,i,j,k,'censored_upper95'),'Rel_RMSE'][-1] <-
+            Results[results_mapper(nsim,i,j,k,'censored_upper85_cprop1'),'Rel_RMSE'][-1] <-
               (parameters[2:6,2] -
                  mean_bite[-1,3]/mean_bite[1,3])^2
 
-            Results[results_mapper(nsim,i,j,k,'censored_upper95'),'Rel_Coverage'][-1] <-
+            Results[results_mapper(nsim,i,j,k,'censored_upper85_cprop1'),'Rel_Coverage'][-1] <-
               ifelse(parameters[2:6,1] <= mean_bite[-1,3]/mean_bite[1,3] & parameters[2:6,3] >= mean_bite[-1,3]/mean_bite[1,3],
                      1,0)
-            Results[results_mapper(nsim,i,j,k,'censored_upper95'),'Bias'] <-
+            Results[results_mapper(nsim,i,j,k,'censored_upper85_cprop1'),'Bias'] <-
               parameters[c(1,7:11),2] - mean_bite_gen[,3]
-            Results[results_mapper(nsim,i,j,k,'censored_upper95'),'RMSE'] <-
+            Results[results_mapper(nsim,i,j,k,'censored_upper85_cprop1'),'RMSE'] <-
               (parameters[c(1,7:11),2] - mean_bite_gen[,3])^2
-            Results[results_mapper(nsim,i,j,k,'censored_upper95'),'Coverage'] <-
+            Results[results_mapper(nsim,i,j,k,'censored_upper85_cprop1'),'Coverage'] <-
               ifelse(parameters[c(1,7:11),1] <= mean_bite[,3] & parameters[c(1,7:11),3] >= mean_bite[,3],
                      1,0)
           }
@@ -733,11 +712,6 @@ for(nsim in 1:n_sim)
           dat <- nbite[nbite$species==3,]
           dat$low <- rep(Inf,dim(dat)[1])
           dat$high <- rep(Inf,dim(dat)[1])
-
-          quant_regions <-
-            as.numeric(by(dat$bites,
-                          dat$station,
-                          FUN = function(x){quantile(x,1, na.rm=T)}, simplify = T))
 
           quant_regions2 <- rep(0, nstation)
           #  as.numeric(by(dat$bites,
@@ -748,29 +722,9 @@ for(nsim in 1:n_sim)
 
           #upper_bound <- pmin( round(upper_bound), quant_regions[dat$station]-dat$bites)
 
-          dat$low[which(dat$prop_sat >= cprop &
-                          0 < upper_bound &
-                          dat$bites <= quant_regions[dat$station] &
-                          dat$bites >= quant_regions2[dat$station])] <-
-            as.matrix(dat[which(dat$prop_sat >= cprop &
-                                  0 < upper_bound &
-                                  dat$bites <= quant_regions[dat$station] &
-                                  dat$bites >= quant_regions2[dat$station]),
+          dat$low[which(dat$prop_sat == 1)] <-
+            as.matrix(dat[which(dat$prop_sat ==1),
                           c('bites')])[,1]
-
-          dat$high[which(dat$prop_sat >= cprop &
-                           0 < upper_bound &
-                           dat$bites <= quant_regions[dat$station] &
-                           dat$bites >= quant_regions2[dat$station])] <-
-            dat$bites[which(dat$prop_sat >= cprop &
-                              0 < upper_bound &
-                              dat$bites <= quant_regions[dat$station] &
-                              dat$bites >= quant_regions2[dat$station])] +
-            upper_bound[which(dat$prop_sat >= cprop &
-                                0 < upper_bound &
-                                dat$bites <= quant_regions[dat$station] &
-                                dat$bites >= quant_regions2[dat$station])]
-
 
           ind_resp <- which(names(dat) %in% c('bites', 'low', 'high'))
 
@@ -783,7 +737,7 @@ for(nsim in 1:n_sim)
                        family="cenpoisson2",verbose=F,
                        data= dat, control.fixed = list(prec.intercept=1e-1),
                        control.compute = list(config=T),
-                       control.mode = list(theta=mod2$misc$theta.mode, restart=T))
+                       control.mode = list(result=mod2, restart=T))
                 },
                 error=function(cond)
                 {
@@ -793,14 +747,14 @@ for(nsim in 1:n_sim)
 
                 }
               )
-            if(sum(is.na(mod10$summary.fixed$mean))>0)
+            if(sum(is.na(mod10$summary.fixed$mean))>0 | mod10$misc$mode.status!=0 )
             {
               mod10 <- NULL
             }
 
             if(!is.null(mod10))
             {
-              Results[results_mapper(nsim,i,j,k,'censored_upper100'),'Converge'] <- 1
+              Results[results_mapper(nsim,i,j,k,'censored_cprop1'),'Converge'] <- 1
 
               parameters <- inla.posterior.sample(5000,mod10,
                        selection = list(`(Intercept)` = 0,
@@ -819,22 +773,22 @@ for(nsim in 1:n_sim)
               }))
               colnames(parameters)=c('LCL', 'Median','UCL')
 
-              Results[results_mapper(nsim,i,j,k,'censored_upper100'),'Rel_Bias'][-1] <-
+              Results[results_mapper(nsim,i,j,k,'censored_cprop1'),'Rel_Bias'][-1] <-
                 parameters[2:6,2] -
                 mean_bite[-1,3]/mean_bite[1,3]
 
-              Results[results_mapper(nsim,i,j,k,'censored_upper100'),'Rel_RMSE'][-1] <-
+              Results[results_mapper(nsim,i,j,k,'censored_cprop1'),'Rel_RMSE'][-1] <-
                 (parameters[2:6,2] -
                 mean_bite[-1,3]/mean_bite[1,3])^2
 
-              Results[results_mapper(nsim,i,j,k,'censored_upper100'),'Rel_Coverage'][-1] <-
+              Results[results_mapper(nsim,i,j,k,'censored_cprop1'),'Rel_Coverage'][-1] <-
                 ifelse(parameters[2:6,1] <= mean_bite[-1,3]/mean_bite[1,3] & parameters[2:6,3] >= mean_bite[-1,3]/mean_bite[1,3],
                        1,0)
-              Results[results_mapper(nsim,i,j,k,'censored_upper100'),'Bias'] <-
+              Results[results_mapper(nsim,i,j,k,'censored_cprop1'),'Bias'] <-
                 parameters[c(1,7:11),2] - mean_bite_gen[,3]
-              Results[results_mapper(nsim,i,j,k,'censored_upper100'),'RMSE'] <-
+              Results[results_mapper(nsim,i,j,k,'censored_cprop1'),'RMSE'] <-
                 (parameters[c(1,7:11),2] - mean_bite_gen[,3])^2
-              Results[results_mapper(nsim,i,j,k,'censored_upper100'),'Coverage'] <-
+              Results[results_mapper(nsim,i,j,k,'censored_cprop1'),'Coverage'] <-
                 ifelse(parameters[c(1,7:11),1] <= mean_bite[,3] & parameters[c(1,7:11),3] >= mean_bite[,3],
                        1,0)
           }
@@ -842,14 +796,6 @@ for(nsim in 1:n_sim)
           dat <- nbite[nbite$species==3,]
           dat$low <- rep(Inf,dim(dat)[1])
           dat$high <- rep(Inf,dim(dat)[1])
-
-          #  as.numeric(by(dat$bites,
-          #                dat$station,
-          #                FUN = function(x){quantile(x,lower_bound_quantile, na.rm=T)}, simplify = T))
-          # #
-          #quant_regions <- rep(quantile(dat$bites, upper_bound_quantile), nstation)
-
-          #upper_bound <- pmin( round(upper_bound), quant_regions[dat$station]-dat$bites)
 
           dat$low[which(dat$prop_sat >= cprop &
                           0 < upper_bound)] <-
@@ -877,7 +823,7 @@ for(nsim in 1:n_sim)
                      family="cenpoisson2",verbose=F,
                      data= dat, control.fixed = list(prec.intercept=1e-1),
                      control.compute = list(config=T),
-                     control.mode = list(theta=mod2$misc$theta.mode, restart=T))
+                     control.mode = list(result=mod2, restart=T))
               },
               error=function(cond)
               {
@@ -887,7 +833,7 @@ for(nsim in 1:n_sim)
 
               }
             )
-          if(sum(is.na(mod12$summary.fixed$mean))>0)
+          if(sum(is.na(mod12$summary.fixed$mean))>0 | mod12$misc$mode.status!=0 )
           {
             mod12 <- NULL
           }
@@ -936,8 +882,8 @@ for(nsim in 1:n_sim)
           print(Results[results_mapper(nsim,i,j,k,'naive'),])
           print(Results[results_mapper(nsim,i,j,k,'adjust'),])
           print(Results[results_mapper(nsim,i,j,k,'censored_upper85'),])
-          print(Results[results_mapper(nsim,i,j,k,'censored_upper95'),])
-          print(Results[results_mapper(nsim,i,j,k,'censored_upper100'),])
+          print(Results[results_mapper(nsim,i,j,k,'censored_upper85_cprop1'),])
+          print(Results[results_mapper(nsim,i,j,k,'censored_cprop1'),])
           print(Results[results_mapper(nsim,i,j,k,'censored'),])
           rm(mod6,mod8,mod10,mod12)
 
@@ -949,7 +895,7 @@ for(nsim in 1:n_sim)
 }
 
 #saveRDS(Results, 'Simulation_Results_Correlated_Corrected_Aggressive.rds')
-Results <- readRDS('./Simulation Study/RDS_Files/Simulation_Results_Correlated_Corrected_Aggressive.rds')
+#Results <- readRDS('./Simulation Study/RDS_Files/Simulation_Results_Correlated_Corrected_Aggressive.rds')
 
 # Create artificial 'relative abundance' of target and aggressive species plots
 rel_abund_dat <- data.frame(expand.grid(
@@ -1004,7 +950,7 @@ rel_abund_plot <-
 Results$sat_level <- factor(Results$sat_level, levels=c('low','high'), ordered = T)
 Results$mean_attract <- factor(Results$mean_attract, levels=c('constant','linear'), ordered = T)
 Results$correlation <- factor(Results$correlation, levels=c('negative','low','medium','high'), ordered = T)
-Results$model <- factor(Results$model, levels=c('naive','adjust','censored','censored_upper100','censored_upper95','censored_upper85'), ordered = T)
+Results$model <- factor(Results$model, levels=c('naive','adjust','censored','censored_cprop1','censored_upper85_cprop1','censored_upper85'), ordered = T)
 
 # THESE ARE DESIGNED FOR A4 LANDSCAPE
 # NOTICE THE HACK IN MULTIPLOT'S LAYOUT ARGUMENT
@@ -1013,7 +959,7 @@ multiplot(
     group_by(sat_level, mean_attract, correlation, nsim) %>%
     mutate(all_converged = mean(Converge)) %>%
     ungroup() %>%
-    filter(Station>1, all_converged==1, !(model %in% c('censored_upper95','censored_upper100')) ) %>%
+    filter(Station>1, all_converged==1, !(model %in% c('censored_upper85_cprop1','censored_cprop1')) ) %>%
     group_by(model, Station, correlation, sat_level,  mean_attract) %>%
     mutate(Mean = median(Rel_Bias),
            UCL = median(Rel_Bias)+(2/sqrt(length(Rel_Bias)))*mad(Rel_Bias),
@@ -1066,7 +1012,61 @@ multiplot(
     group_by(sat_level, mean_attract, correlation, nsim) %>%
     mutate(all_converged = mean(Converge)) %>%
     ungroup() %>%
-    filter(Station>1, all_converged==1, !(model %in% c('censored_upper95','censored_upper100')) ) %>%
+    filter(Station>1, all_converged==1, !(model %in% c('censored_upper85_cprop1','censored_cprop1')) ) %>%
+    group_by(model, Station, correlation, sat_level,  mean_attract) %>%
+    mutate(Mean = median(Rel_Bias),
+           UCL = quantile(Rel_Bias, probs=0.975),
+           LCL = quantile(Rel_Bias, probs=0.025)) %>%
+    ungroup(Station) %>%
+    mutate(random_samp = c(T, rep(F, length(Rel_Bias)-1))) %>%
+    group_by(Station) %>%
+    ggplot(aes(x=Station, y=Mean, ymin=LCL, ymax=UCL, colour=model, group=model, shape=model)) +
+    geom_rect(data= ~.x[.x$random_samp==T,],
+              aes(x=Station, y=Mean, ymin=LCL, ymax=UCL, colour=model, group=model, fill = mean_attract),
+              xmin = -Inf,xmax = Inf,
+              ymin = -Inf,ymax = Inf,alpha = 0.3) +
+    geom_errorbar(position = position_dodge(width=0.8)) +
+    geom_point(position = position_dodge(width=0.8), size=2) +
+    facet_grid(mean_attract + sat_level ~ correlation , scales = 'free_y',
+               labeller = labeller(
+                 correlation=c(
+                   negative = 'negative correlation',
+                   low = 'low positive correlation',
+                   medium = 'med positive correlation',
+                   high = 'high positive correlation'
+                 ),
+                 mean_attract = c(
+                   constant = 'constant target species \nabundance',
+                   linear = 'linearly increasing target \nspecies abundance '
+                 ),
+                 sat_level = c(
+                   low = 'saturation less "common"',
+                   high = 'saturation "common"'
+                 )
+               )) +
+    geom_hline(yintercept=0) +
+    ggtitle('Bias in Relative Abundance Indices vs Method',
+            subtitle = 'Rows are trends in relative abundance of target species and the average degree of hook saturation,\nColumns are correlation of target species\' abundance with saturation events') +
+    ylab('Bias in Relative Abundance Index') +
+    xlab('Year') + guides(fill='none') +
+    scale_fill_brewer(palette = 'Pastel1') +
+    theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+          panel.background = element_blank(), axis.line = element_blank(),
+          legend.position = 'right') +
+    scale_color_viridis_d(labels=c('Naive','Adjusted','Censored','Censored Adj')) +
+    scale_shape_manual(labels=c('Naive','Adjusted','Censored','Censored Adj'),
+                       values=c('circle','triangle','square','square')) +
+    guides(color=guide_legend(override.aes=list(fill=NA))),
+  rel_abund_plot,
+  layout = matrix(c(rep(1,2000),rep(NA,55), rep(2,445)), nrow = 500, ncol = 5, byrow = F))
+
+
+multiplot(
+  Results %>%
+    group_by(sat_level, mean_attract, correlation, nsim) %>%
+    mutate(all_converged = mean(Converge)) %>%
+    ungroup() %>%
+    filter(Station>1, all_converged==1, !(model %in% c('censored_upper85_cprop1','censored_cprop1')) ) %>%
     group_by(model, Station, correlation, sat_level,  mean_attract) %>%
     mutate(Mean = median(Rel_RMSE),
            UCL = median(Rel_RMSE)+(2/sqrt(length(Rel_RMSE)))*mad(Rel_RMSE),
@@ -1119,7 +1119,7 @@ multiplot(
     group_by(sat_level, mean_attract, correlation, nsim) %>%
     mutate(all_converged = mean(Converge)) %>%
     ungroup() %>%
-    filter(Station>1, all_converged==1, !(model %in% c('naive','censored_upper95','censored_upper100')) ) %>%
+    filter(Station>1, all_converged==1, !(model %in% c('adjust','censored_upper85_cprop1','censored_cprop1')) ) %>%
     group_by(model, Station, correlation, sat_level,  mean_attract) %>%
     mutate(Mean = median(Rel_RMSE),
            UCL = median(Rel_RMSE)+(2/sqrt(length(Rel_RMSE)))*mad(Rel_RMSE),
@@ -1160,8 +1160,8 @@ multiplot(
     theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
           panel.background = element_blank(), axis.line = element_blank(),
           legend.position = 'right') +
-    scale_color_viridis_d(labels=c('Adjusted','Censored','Censored Adj')) +
-    scale_shape_manual(labels=c('Adjusted','Censored','Censored Adj'),
+    scale_color_viridis_d(labels=c('Naive','Censored','Censored Adj')) +
+    scale_shape_manual(labels=c('Naive','Censored','Censored Adj'),
                        values=c('triangle','square','square')) +
     guides(color=guide_legend(override.aes=list(fill=NA))),
   rel_abund_plot,
@@ -1172,7 +1172,7 @@ multiplot(
     group_by(sat_level, mean_attract, correlation, nsim) %>%
     mutate(all_converged = mean(Converge)) %>%
     ungroup() %>%
-    filter(Station>1, all_converged==1, !(model %in% c('censored_upper95','censored_upper100')) ) %>%
+    filter(Station>1, all_converged==1, !(model %in% c('censored_upper85_cprop1','censored_cprop1')) ) %>%
     group_by(model, Station, correlation, sat_level,  mean_attract) %>%
     mutate(Coverage_Mean = mean(Rel_Coverage),
            UCL=mean(Rel_Coverage)+(2/sqrt(length(Rel_Coverage)))*sqrt(mean(Rel_Coverage)*(1-mean(Rel_Coverage))),
@@ -1226,7 +1226,7 @@ multiplot(
     group_by(sat_level, mean_attract, correlation, nsim) %>%
     mutate(all_converged = mean(Converge)) %>%
     ungroup() %>%
-    filter(Station>1, all_converged==1, !(model %in% c('censored_upper95','censored_upper100')) ) %>%
+    filter(Station>1, all_converged==1, !(model %in% c('censored_upper85_cprop1','censored_cprop1')) ) %>%
     group_by(model, correlation, sat_level,  mean_attract) %>%
     mutate(Mean = median(Rel_Bias),
            UCL = median(Rel_Bias)+(2/sqrt(length(Rel_Bias)))*mad(Rel_Bias),
@@ -1280,7 +1280,7 @@ multiplot(
     group_by(sat_level, mean_attract, correlation, nsim) %>%
     mutate(all_converged = mean(Converge)) %>%
     ungroup() %>%
-    filter(Station>1, all_converged==1, !(model %in% c('censored_upper95','censored_upper100')) ) %>%
+    filter(Station>1, all_converged==1, !(model %in% c('censored_upper85_cprop1','censored_cprop1')) ) %>%
     group_by(model, correlation, sat_level,  mean_attract) %>%
     mutate(Mean = median(Rel_RMSE),
            UCL = median(Rel_RMSE)+(2/sqrt(length(Rel_RMSE)))*mad(Rel_RMSE),
@@ -1333,7 +1333,7 @@ multiplot(
     group_by(sat_level, mean_attract, correlation, nsim) %>%
     mutate(all_converged = mean(Converge)) %>%
     ungroup() %>%
-    filter(Station>1, all_converged==1, !(model %in% c('naive','censored_upper95','censored_upper100')) ) %>%
+    filter(Station>1, all_converged==1, !(model %in% c('naive','censored_upper85_cprop1','censored_cprop1')) ) %>%
     group_by(model, correlation, sat_level,  mean_attract) %>%
     mutate(Mean = median(Rel_RMSE),
            UCL = median(Rel_RMSE)+(2/sqrt(length(Rel_RMSE)))*mad(Rel_RMSE),
@@ -1386,7 +1386,7 @@ multiplot(
     group_by(sat_level, mean_attract, correlation, nsim) %>%
     mutate(all_converged = mean(Converge)) %>%
     ungroup() %>%
-    filter(Station>5, all_converged==1, !(model %in% c('censored_upper95','censored_upper100')) ) %>%
+    filter(Station>5, all_converged==1, !(model %in% c('censored_upper85_cprop1','censored_cprop1')) ) %>%
     group_by(model, correlation, sat_level,  mean_attract) %>%
     mutate(Coverage_Mean = mean(Rel_Coverage),
            UCL=pmin(mean(Rel_Coverage)+(2/sqrt(length(Rel_Coverage)))*sqrt(mean(Rel_Coverage)*(1-mean(Rel_Coverage))),1),
@@ -1482,8 +1482,8 @@ multiplot(
     scale_color_viridis_d(labels=c('Censored','Censored qMax','Censored q95','Censored q85')) +
     scale_shape_manual(labels=c('Censored','Censored qMax','Censored q95','Censored q85'),
                        values=c('square','square','square','square')) +
-    scale_x_discrete(labels=c("censored" = "Censored", "censored_upper100" = "Censored qMax",
-                              "censored_upper95" = "Censored q95","censored_upper85" = "Censored q85 \n'Censored Adj'")) +
+    scale_x_discrete(labels=c("censored" = "Censored", "censored_cprop1" = "Censored qMax",
+                              "censored_upper85_cprop1" = "Censored q95","censored_upper85" = "Censored q85 \n'Censored Adj'")) +
     guides(color='none', model='none', shape='none'),
   Results %>%
     group_by(sat_level, mean_attract, correlation, nsim) %>%
@@ -1529,8 +1529,8 @@ multiplot(
     scale_color_viridis_d(labels=c('Censored','Censored qMax','Censored q95','Censored q85')) +
     scale_shape_manual(labels=c('Censored','Censored qMax','Censored q95','Censored q85'),
                        values=c('square','square','square','square')) +
-    scale_x_discrete(labels=c("censored" = "Censored", "censored_upper100" = "Censored qMax",
-                              "censored_upper95" = "Censored q95","censored_upper85" = "Censored q85 \n'Censored Adj'")) +
+    scale_x_discrete(labels=c("censored" = "Censored", "censored_cprop1" = "Censored qMax",
+                              "censored_upper85_cprop1" = "Censored q95","censored_upper85" = "Censored q85 \n'Censored Adj'")) +
     guides(color='none', model='none', shape='none'),
   Results %>%
     group_by(sat_level, mean_attract, correlation, nsim) %>%
@@ -1575,8 +1575,8 @@ multiplot(
     scale_color_viridis_d(labels=c('Censored','Censored qMax','Censored q95','Censored q85')) +
     scale_shape_manual(labels=c('Censored','Censored qMax','Censored q95','Censored q85'),
                        values=c('square','square','square','square')) +
-    scale_x_discrete(labels=c("censored" = "Censored", "censored_upper100" = "Censored qMax",
-                              "censored_upper95" = "Censored q95","censored_upper85" = "Censored q85 \n'Censored Adj'")) +
+    scale_x_discrete(labels=c("censored" = "Censored", "censored_cprop1" = "Censored qMax",
+                              "censored_upper85_cprop1" = "Censored q95","censored_upper85" = "Censored q85 \n'Censored Adj'")) +
     guides(color='none', model='none', shape='none'),
     cols=1)
 ## Repeat, but this time average over all settings
@@ -1609,8 +1609,8 @@ multiplot(
     scale_color_viridis_d(labels=c('Censored','Censored qMax','Censored q95','Censored q85')) +
     scale_shape_manual(labels=c('Censored','Censored qMax','Censored q95','Censored q85'),
                        values=c('square','square','square','square')) +
-    scale_x_discrete(labels=c("censored" = "Censored", "censored_upper100" = "Censored qMax",
-                              "censored_upper95" = "Censored q95","censored_upper85" = "Censored q85 \n'Censored Adj'")) +
+    scale_x_discrete(labels=c("censored" = "Censored", "censored_cprop1" = "Censored qMax",
+                              "censored_upper85_cprop1" = "Censored q95","censored_upper85" = "Censored q85 \n'Censored Adj'")) +
     guides(color='none', model='none', shape='none'),
   Results %>%
     group_by(sat_level, mean_attract, correlation, nsim) %>%
@@ -1638,8 +1638,8 @@ multiplot(
     scale_color_viridis_d(labels=c('Censored','Censored qMax','Censored q95','Censored q85')) +
     scale_shape_manual(labels=c('Censored','Censored qMax','Censored q95','Censored q85'),
                        values=c('square','square','square','square')) +
-    scale_x_discrete(labels=c("censored" = "Censored", "censored_upper100" = "Censored qMax",
-                              "censored_upper95" = "Censored q95","censored_upper85" = "Censored q85 \n'Censored Adj'")) +
+    scale_x_discrete(labels=c("censored" = "Censored", "censored_cprop1" = "Censored qMax",
+                              "censored_upper85_cprop1" = "Censored q95","censored_upper85" = "Censored q85 \n'Censored Adj'")) +
     guides(color='none', model='none', shape='none'),
   Results %>%
     group_by(sat_level, mean_attract, correlation, nsim) %>%
@@ -1667,8 +1667,8 @@ multiplot(
     scale_color_viridis_d(labels=c('Censored','Censored qMax','Censored q95','Censored q85')) +
     scale_shape_manual(labels=c('Censored','Censored qMax','Censored q95','Censored q85'),
                        values=c('square','square','square','square')) +
-    scale_x_discrete(labels=c("censored" = "Censored", "censored_upper100" = "Censored qMax",
-                              "censored_upper95" = "Censored q95","censored_upper85" = "Censored q85 \n'Censored Adj'")) +
+    scale_x_discrete(labels=c("censored" = "Censored", "censored_cprop1" = "Censored qMax",
+                              "censored_upper85_cprop1" = "Censored q95","censored_upper85" = "Censored q85 \n'Censored Adj'")) +
     guides(color='none', model='none', shape='none'),
   cols=1)
 
@@ -1698,8 +1698,8 @@ Results %>%
   geom_hline(aes(yintercept=Mean), linetype='dashed', colour='black') +
   geom_hline(aes(yintercept=Mean2), linetype='dotted', colour='red') +
   geom_hline(yintercept = 1, linetype='solid', colour='black') +
-  scale_x_discrete(labels=c("censored" = "Censored", "censored_upper100" = "Censored qMax",
-                            "censored_upper95" = "Censored q95","censored_upper85" = "Censored q85 \n'Censored Adj'")) +
+  scale_x_discrete(labels=c("censored" = "Censored", "censored_cprop1" = "Censored qMax",
+                            "censored_upper85_cprop1" = "Censored q95","censored_upper85" = "Censored q85 \n'Censored Adj'")) +
   guides(colour='none', fill='none') +
   scale_fill_brewer(palette = 'Pastel1')
 
@@ -1718,6 +1718,22 @@ Results %>%
   ggtitle('Proportion of Converged Simulations with Specified Degree of Hook Saturation',
           subtitle = 'Columns are degree of saturation and trend in relative abundance,\nRows are correlation of target species\' abundance with saturation events \nRed and Black correspond to 100% and 85% Hook Saturation respectively') +
   ylab('Proportion') + xlab('Model')
+
+Results %>%
+  group_by(sat_level, mean_attract, correlation, nsim) %>%
+  mutate(all_converged = mean(Converge)) %>%
+  ungroup() %>%
+  filter(all_converged==1) %>%
+  group_by(model,correlation,  sat_level, mean_attract, Station) %>%
+  summarise(Mean = mean(Prop_Sat_85),
+            Mean2 = mean(Prop_Sat_100)) %>%
+  ggplot(aes(x=Station, y=Mean))+
+  geom_point(position = position_dodge(width=0.3)) +
+  geom_point(aes(x=Station, y=Mean2), colour='red')+
+  facet_grid(sat_level + mean_attract ~ correlation) +
+  ggtitle('Proportion of Simulations with Specified Degree of Hook Saturation vs. Year',
+          subtitle = 'Columns are correlation of target species\' abundance with saturation events \nRows are degree of saturation and trend in relative abundance. \nRed and Black correspond to 100% and 85% Hook Saturation respectively') +
+  ylab('Proportion') + xlab('Year') + ylim(c(0,1))
 
 Results %>%
   group_by(sat_level, mean_attract, correlation, nsim) %>%
@@ -1768,11 +1784,33 @@ Results %>%
   group_by(model) %>%
   summarise(sum(Result==0))
 
-# (332 + 319 + 172 + 223)  / (191 + 332 + 319 + 172 + 223) = 85%
-# Note that the CPUE-based estimator never wins
+# (161 + 12 + 62 + 49)  / (161 + 12 + 62 + 49 + 257) = 52.5%
+# Note that the ICR-based estimator never wins
+
+# At year 6, how many of the runs favour the censored estimators with respect to Coverage?
+Results %>%
+  group_by(sat_level, mean_attract, correlation, nsim) %>%
+  mutate(all_converged = mean(Converge)) %>%
+  ungroup() %>%
+  filter(Station==6, all_converged==1) %>%
+  group_by_all() %>%
+  ungroup(Rel_RMSE, Bias, Rel_Bias, Coverage, Rel_Coverage, Converge, RMSE,Prop_Sat_85,Prop_Sat_100, all_converged) %>%
+  mutate(Result = Rel_Coverage-0.95) %>%
+  ungroup(nsim) %>%
+  summarise(Result=mean(Result)) %>%
+  ungroup(model) %>%
+  summarise(Best=abs(Result)==min(abs(Result)), model) %>%
+  ungroup() %>%
+  group_by(model) %>%
+  summarise(sum(Best))
+  # summarise(mean(Result), mean(Result)-2*sd(Result),
+  #           mean(Result)+2*sd(Result))
+
+# 11/16 settings favoured by censored approaches, 5/11 favoured by CPUE-based.
+# Note that the ICR-based estimator never wins
 
 # Compare the non censored models performace in converged and non-converged settings
-Results_Correlated %>%
+Results %>%
   group_by(sat_level, mean_attract, correlation, nsim) %>%
   mutate(all_converged = (mean(Converge)==1)) %>%
   ungroup() %>%
