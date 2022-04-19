@@ -20,18 +20,18 @@ cov_matrices <- list( neg=
                         diag(c(0.8, 0.2, 0.2)) %*%
                         matrix(c(1,0,0,0,1,-0.6,0,-0.6,1), 3,3,byrow = T) %*%
                         diag(c(0.7, 0.2, 0.2)),
-  low=
-  diag(c(0.8, 0.2, 0.2)) %*%
-  matrix(c(1,0,0,0,1,0.1,0,0.1,1), 3,3,byrow = T) %*%
-  diag(c(0.7, 0.2, 0.2)),
-  med=
-    diag(c(0.8, 0.2, 0.2)) %*%
-    matrix(c(1,0,0,0,1,0.3,0,0.3,1), 3,3,byrow = T) %*%
-    diag(c(0.7, 0.2, 0.2)),
-  high=
-  diag(c(0.8, 0.2, 0.2)) %*%
-    matrix(c(1,0,0,0,1,0.6,0,0.6,1), 3,3,byrow = T) %*%
-    diag(c(0.7, 0.2, 0.2)))
+                      low=
+                        diag(c(0.8, 0.2, 0.2)) %*%
+                        matrix(c(1,0,0,0,1,0.1,0,0.1,1), 3,3,byrow = T) %*%
+                        diag(c(0.7, 0.2, 0.2)),
+                      med=
+                        diag(c(0.8, 0.2, 0.2)) %*%
+                        matrix(c(1,0,0,0,1,0.3,0,0.3,1), 3,3,byrow = T) %*%
+                        diag(c(0.7, 0.2, 0.2)),
+                      high=
+                        diag(c(0.8, 0.2, 0.2)) %*%
+                        matrix(c(1,0,0,0,1,0.6,0,0.6,1), 3,3,byrow = T) %*%
+                        diag(c(0.7, 0.2, 0.2)))
 n_sim <- 100
 hook_sat_level <- 0.85 # true proportion at which saturation effects begin
 cprop=0.95 # assumed proportion at which saturation effects begin
@@ -148,7 +148,7 @@ results_mapper <- function(n,i,j,k,mod)
             Results$mean_attract == mean_attract[j] &
             Results$correlation == c('negative','low','medium','high')[k] &
             Results$model == mod)
-         )
+  )
 }
 
 for(nsim in 1:n_sim)
@@ -185,707 +185,707 @@ for(nsim in 1:n_sim)
                   rep(400,6),
                   (c(120, 140, 160, 180, 200, 220)-100))
         }
-          # for(l in 1:dim(bite_funs)[2])
-          # {
-          saturation_effect <- c(0, 0.2, 0.8)
-          # sample the number of each species that WOULD bite at each station for each year if hooks were available
-          nbite <- data.frame(bites = rep(0, times=nspecies*nstation*nyears),
-                              attracted = rep(0, times=nspecies*nstation*nyears),
-                              species=rep(1:3, each=nstation*nyears),
-                              station=rep(1:nstation, times=nspecies*nyears),
-                              year=rep(rep(1:nyears, each=nstation), times=nspecies))
-          nbite$attracted <- rpois(dim(nbite)[1],
-                                   lambda = as.numeric(mean_bite_gen[cbind(nbite$station,nbite$species)])*
-                                     exp(as.numeric(rmvn(n=nstation*nyears, mu = rep(0,nspecies), V=cov_matrices[[k]])[cbind(rep(1:(nstation*nyears),times=nspecies),nbite$species)])))
-                                     #exp(rnorm(dim(nbite)[1], mean = 0, sd=sd_log_bite[nbite$species])))
+        # for(l in 1:dim(bite_funs)[2])
+        # {
+        saturation_effect <- c(0, 0.2, 0.8)
+        # sample the number of each species that WOULD bite at each station for each year if hooks were available
+        nbite <- data.frame(bites = rep(0, times=nspecies*nstation*nyears),
+                            attracted = rep(0, times=nspecies*nstation*nyears),
+                            species=rep(1:3, each=nstation*nyears),
+                            station=rep(1:nstation, times=nspecies*nyears),
+                            year=rep(rep(1:nyears, each=nstation), times=nspecies))
+        nbite$attracted <- rpois(dim(nbite)[1],
+                                 lambda = as.numeric(mean_bite_gen[cbind(nbite$station,nbite$species)])*
+                                   exp(as.numeric(rmvn(n=nstation*nyears, mu = rep(0,nspecies), V=cov_matrices[[k]])[cbind(rep(1:(nstation*nyears),times=nspecies),nbite$species)])))
+        #exp(rnorm(dim(nbite)[1], mean = 0, sd=sd_log_bite[nbite$species])))
 
-          for(i2 in 1:nstation)
+        for(i2 in 1:nstation)
+        {
+          for(j2 in 1:nyears)
           {
-            for(j2 in 1:nyears)
+            bite_time_1 <- bite_samp(bite_funs[1],sum(nbite$attracted[nbite$species==1 &
+                                                                        nbite$station==i2 &
+                                                                        nbite$year==j2]))
+            # truncate them to 0-5 interval
+            while(max(bite_time_1)>soak_time)
             {
-              bite_time_1 <- bite_samp(bite_funs[1],sum(nbite$attracted[nbite$species==1 &
-                                                                          nbite$station==i2 &
-                                                                          nbite$year==j2]))
-              # truncate them to 0-5 interval
-              while(max(bite_time_1)>soak_time)
-              {
-                bite_time_1[bite_time_1>soak_time] <-
-                  bite_samp(bite_funs[1],sum(bite_time_1>soak_time))
-              }
-              # repeat for species 2 from uniform distribution
-              bite_time_2 <- bite_samp(bite_funs[2],sum(nbite$attracted[nbite$species==2 &
-                                                                          nbite$station==i2 &
-                                                                          nbite$year==j2]))
-              # truncate them to 0-5 interval
-              while(max(bite_time_2)>soak_time)
-              {
-                bite_time_2[bite_time_2>soak_time] <-
-                  bite_samp(bite_funs[2],sum(bite_time_2>soak_time))
-              }
+              bite_time_1[bite_time_1>soak_time] <-
+                bite_samp(bite_funs[1],sum(bite_time_1>soak_time))
+            }
+            # repeat for species 2 from uniform distribution
+            bite_time_2 <- bite_samp(bite_funs[2],sum(nbite$attracted[nbite$species==2 &
+                                                                        nbite$station==i2 &
+                                                                        nbite$year==j2]))
+            # truncate them to 0-5 interval
+            while(max(bite_time_2)>soak_time)
+            {
+              bite_time_2[bite_time_2>soak_time] <-
+                bite_samp(bite_funs[2],sum(bite_time_2>soak_time))
+            }
 
-              # repeat for species 3 from uniform distribution
-              bite_time_3 <- bite_samp(bite_funs[3],sum(nbite$attracted[nbite$species==3 &
-                                                                          nbite$station==i2 &
-                                                                          nbite$year==j2]))
-              # truncate them to 0-5 interval
-              while(max(bite_time_3)>soak_time)
-              {
-                bite_time_3[bite_time_3>soak_time] <-
-                  bite_samp(bite_funs[3],sum(bite_time_3>soak_time))
-              }
+            # repeat for species 3 from uniform distribution
+            bite_time_3 <- bite_samp(bite_funs[3],sum(nbite$attracted[nbite$species==3 &
+                                                                        nbite$station==i2 &
+                                                                        nbite$year==j2]))
+            # truncate them to 0-5 interval
+            while(max(bite_time_3)>soak_time)
+            {
+              bite_time_3[bite_time_3>soak_time] <-
+                bite_samp(bite_funs[3],sum(bite_time_3>soak_time))
+            }
 
+            # Now we sample the first n_hooks*n_hook_sat_level unadjusted
+            if((length(bite_time_1) + length(bite_time_2) + length(bite_time_3)) <= n_hooks*hook_sat_level)
+            {
+              nbite$bites[nbite$species==1 &
+                            nbite$station==i2 &
+                            nbite$year==j2] <- length(bite_time_1)
+              nbite$bites[nbite$species==2 &
+                            nbite$station==i2 &
+                            nbite$year==j2] <- length(bite_time_2)
+              nbite$bites[nbite$species==3 &
+                            nbite$station==i2 &
+                            nbite$year==j2] <- length(bite_time_3)
+            }
+            if((length(bite_time_1) + length(bite_time_2) + length(bite_time_3)) > n_hooks*hook_sat_level)
+            {
+              species_ind <- c(rep(1, length(bite_time_1)),rep(2,length(bite_time_2)),rep(3,length(bite_time_3)))
               # Now we sample the first n_hooks*n_hook_sat_level unadjusted
-              if((length(bite_time_1) + length(bite_time_2) + length(bite_time_3)) <= n_hooks*hook_sat_level)
+              all_times <- c(bite_time_1,bite_time_2,bite_time_3)
+              time_ind <- sort.int(all_times, index.return = T, decreasing = F)$ix
+              # for the remaining hooks we sample/thin according to the sat_fun
+              current_sat_level <- hook_sat_level
+              counter <- round(n_hooks*hook_sat_level)
+              for(k2 in (round(n_hooks*hook_sat_level)+1):(length(all_times)))
               {
-                nbite$bites[nbite$species==1 &
-                              nbite$station==i2 &
-                              nbite$year==j2] <- length(bite_time_1)
-                nbite$bites[nbite$species==2 &
-                              nbite$station==i2 &
-                              nbite$year==j2] <- length(bite_time_2)
-                nbite$bites[nbite$species==3 &
-                              nbite$station==i2 &
-                              nbite$year==j2] <- length(bite_time_3)
-              }
-              if((length(bite_time_1) + length(bite_time_2) + length(bite_time_3)) > n_hooks*hook_sat_level)
-              {
-                species_ind <- c(rep(1, length(bite_time_1)),rep(2,length(bite_time_2)),rep(3,length(bite_time_3)))
-                # Now we sample the first n_hooks*n_hook_sat_level unadjusted
-                all_times <- c(bite_time_1,bite_time_2,bite_time_3)
-                time_ind <- sort.int(all_times, index.return = T, decreasing = F)$ix
-                # for the remaining hooks we sample/thin according to the sat_fun
-                current_sat_level <- hook_sat_level
-                counter <- round(n_hooks*hook_sat_level)
-                for(k2 in (round(n_hooks*hook_sat_level)+1):(length(all_times)))
+                flag <- T
+                if(species_ind[time_ind[k2]]==1)
                 {
-                  flag <- T
-                  if(species_ind[time_ind[k2]]==1)
-                  {
-                    time_ind[k2] <- ifelse(rbinom(n=1,size=1,
-                                                  prob=sat_fun(sat_effect = saturation_effect[1],
-                                                               sat_level = current_sat_level,
-                                                               hook_sat_level = hook_sat_level))==1,
-                                           time_ind[k2], NA)
-                    flag <- F
-                  }
-                  if(species_ind[time_ind[k2]]==2 & flag)
-                  {
-                    time_ind[k2] <- ifelse(rbinom(n=1,size=1,
-                                                  prob=sat_fun(sat_effect = saturation_effect[2],
-                                                               sat_level = current_sat_level,
-                                                               hook_sat_level = hook_sat_level))==1,
-                                           time_ind[k2], NA)
-                    flag <- F
-                  }
-                  if(species_ind[time_ind[k2]]==3 & flag)
-                  {
-                    time_ind[k2] <- ifelse(rbinom(n=1,size=1,
-                                                  prob=sat_fun(sat_effect = saturation_effect[3],
-                                                               sat_level = current_sat_level,
-                                                               hook_sat_level = hook_sat_level))==1,
-                                           time_ind[k2], NA)
-                  }
-                  if(!is.na(time_ind[k2]))
-                  {
-                    counter <- counter + 1
-                    current_sat_level <- counter/n_hooks
-                  }
-                  if(counter==n_hooks)
-                  {
-                    time_ind <- time_ind[1:k2]
-                    break
-                  }
+                  time_ind[k2] <- ifelse(rbinom(n=1,size=1,
+                                                prob=sat_fun(sat_effect = saturation_effect[1],
+                                                             sat_level = current_sat_level,
+                                                             hook_sat_level = hook_sat_level))==1,
+                                         time_ind[k2], NA)
+                  flag <- F
                 }
-                time_ind <- time_ind[!is.na(time_ind)]
-                nbite$bites[nbite$species==1 &
-                              nbite$station==i2 &
-                              nbite$year==j2] <- sum(species_ind[time_ind]==1)
-                nbite$bites[nbite$species==2 &
-                              nbite$station==i2 &
-                              nbite$year==j2] <- sum(species_ind[time_ind]==2)
-                nbite$bites[nbite$species==3 &
-                              nbite$station==i2 &
-                              nbite$year==j2] <- sum(species_ind[time_ind]==3)
+                if(species_ind[time_ind[k2]]==2 & flag)
+                {
+                  time_ind[k2] <- ifelse(rbinom(n=1,size=1,
+                                                prob=sat_fun(sat_effect = saturation_effect[2],
+                                                             sat_level = current_sat_level,
+                                                             hook_sat_level = hook_sat_level))==1,
+                                         time_ind[k2], NA)
+                  flag <- F
+                }
+                if(species_ind[time_ind[k2]]==3 & flag)
+                {
+                  time_ind[k2] <- ifelse(rbinom(n=1,size=1,
+                                                prob=sat_fun(sat_effect = saturation_effect[3],
+                                                             sat_level = current_sat_level,
+                                                             hook_sat_level = hook_sat_level))==1,
+                                         time_ind[k2], NA)
+                }
+                if(!is.na(time_ind[k2]))
+                {
+                  counter <- counter + 1
+                  current_sat_level <- counter/n_hooks
+                }
+                if(counter==n_hooks)
+                {
+                  time_ind <- time_ind[1:k2]
+                  break
+                }
               }
+              time_ind <- time_ind[!is.na(time_ind)]
+              nbite$bites[nbite$species==1 &
+                            nbite$station==i2 &
+                            nbite$year==j2] <- sum(species_ind[time_ind]==1)
+              nbite$bites[nbite$species==2 &
+                            nbite$station==i2 &
+                            nbite$year==j2] <- sum(species_ind[time_ind]==2)
+              nbite$bites[nbite$species==3 &
+                            nbite$station==i2 &
+                            nbite$year==j2] <- sum(species_ind[time_ind]==3)
+            }
+
+          }
+        }
+
+        nbite <-
+          nbite %>%
+          group_by(station, year) %>%
+          mutate(prop_sat=sum(bites/n_hooks),
+                 composition=bites/(sum(bites)))
+
+        # ggplot(nbite, aes(x=station, y=bites, group=factor(species), colour=factor(species))) +
+        #   geom_point() + geom_smooth() + geom_hline(yintercept = mean_bite[1,2:3]*exp(0.5*sd_log_bite[c(2,3)]^2))
+        #
+        # ggplot(nbite, aes(x=prop_sat, y=composition, group=factor(species), colour=factor(species))) +
+        #   geom_point() + geom_smooth()
+        #
+        # ggplot(nbite[nbite$species!=2,], aes(x=prop_sat, y=composition, group=factor(species), colour=factor(species))) +
+        #   geom_point() + geom_smooth()
+        #
+        # ggplot(nbite[nbite$species!=2,], aes(x=prop_sat, y=composition, group=factor(species), colour=factor(species))) +
+        #   geom_point() + geom_smooth() + facet_wrap(~factor(station))
+
+        Results[results_mapper(nsim,i,j,k,'naive'),'Prop_Sat_85'] <- as.numeric(by(nbite, nbite$station, FUN=function(x){mean(x$prop_sat>cprop)}))
+        Results[results_mapper(nsim,i,j,k,'adjust'),'Prop_Sat_85'] <- as.numeric(by(nbite, nbite$station, FUN=function(x){mean(x$prop_sat>cprop)}))
+        Results[results_mapper(nsim,i,j,k,'censored_upper85'),'Prop_Sat_85'] <- as.numeric(by(nbite, nbite$station, FUN=function(x){mean(x$prop_sat>cprop)}))
+        Results[results_mapper(nsim,i,j,k,'naive'),'Prop_Sat_100'] <- as.numeric(by(nbite, nbite$station, FUN=function(x){mean(x$prop_sat==1)}))
+        Results[results_mapper(nsim,i,j,k,'adjust'),'Prop_Sat_100'] <- as.numeric(by(nbite, nbite$station, FUN=function(x){mean(x$prop_sat==1)}))
+        Results[results_mapper(nsim,i,j,k,'censored_upper85'),'Prop_Sat_100'] <- as.numeric(by(nbite, nbite$station, FUN=function(x){mean(x$prop_sat==1)}))
+        Results[results_mapper(nsim,i,j,k,'censored_upper85_cprop1'),'Prop_Sat_100'] <- as.numeric(by(nbite, nbite$station, FUN=function(x){mean(x$prop_sat==1)}))
+        Results[results_mapper(nsim,i,j,k,'censored_upper85_cprop1'),'Prop_Sat_85'] <- as.numeric(by(nbite, nbite$station, FUN=function(x){mean(x$prop_sat>cprop)}))
+        Results[results_mapper(nsim,i,j,k,'censored_cprop1'),'Prop_Sat_100'] <- as.numeric(by(nbite, nbite$station, FUN=function(x){mean(x$prop_sat==1)}))
+        Results[results_mapper(nsim,i,j,k,'censored_cprop1'),'Prop_Sat_85'] <- as.numeric(by(nbite, nbite$station, FUN=function(x){mean(x$prop_sat>cprop)}))
+        Results[results_mapper(nsim,i,j,k,'censored'),'Prop_Sat_100'] <- as.numeric(by(nbite, nbite$station, FUN=function(x){mean(x$prop_sat==1)}))
+        Results[results_mapper(nsim,i,j,k,'censored'),'Prop_Sat_85'] <- as.numeric(by(nbite, nbite$station, FUN=function(x){mean(x$prop_sat>cprop)}))
+
+        # fit a naive model that ignores competition
+        dat <- nbite[nbite$species == 3,]
+        dat$event_ID <- 1:dim(dat)[1]
+
+        mod2 <-
+          tryCatch(
+            {
+              inla(bites ~ factor(station) + f(event_ID, constr=T, model='iid'),
+                   data = dat, family = 'poisson',verbose=F, control.fixed = list(prec.intercept=1e-1),
+                   control.compute = list(config=T))
+            },
+            error=function(cond)
+            {
+              return(NULL)
+            },
+            finally={
 
             }
-          }
+          )
+        if(sum(is.na(mod2$summary.fixed$mean))>0 | sum(mod2$misc$mode.status!=0)>0 )
+        {
+          mod2 <- NULL
+        }
 
-          nbite <-
-            nbite %>%
-            group_by(station, year) %>%
-            mutate(prop_sat=sum(bites/n_hooks),
-                   composition=bites/(sum(bites)))
+        if(!is.null(mod2))
+        {
+          Results[results_mapper(nsim,i,j,k,'naive'),'Converge'] <- 1
 
-          # ggplot(nbite, aes(x=station, y=bites, group=factor(species), colour=factor(species))) +
-          #   geom_point() + geom_smooth() + geom_hline(yintercept = mean_bite[1,2:3]*exp(0.5*sd_log_bite[c(2,3)]^2))
-          #
-          # ggplot(nbite, aes(x=prop_sat, y=composition, group=factor(species), colour=factor(species))) +
-          #   geom_point() + geom_smooth()
-          #
-          # ggplot(nbite[nbite$species!=2,], aes(x=prop_sat, y=composition, group=factor(species), colour=factor(species))) +
-          #   geom_point() + geom_smooth()
-          #
-          # ggplot(nbite[nbite$species!=2,], aes(x=prop_sat, y=composition, group=factor(species), colour=factor(species))) +
-          #   geom_point() + geom_smooth() + facet_wrap(~factor(station))
+          parameters <- inla.posterior.sample(2000,mod2,
+                                              selection = list(`(Intercept)` = 0,
+                                                               `factor(station)2` = 0,`factor(station)3` = 0,
+                                                               `factor(station)4` = 0,`factor(station)5` = 0,
+                                                               `factor(station)6` = 0))
+          parameters <- inla.posterior.sample.eval(fun=function(...){
+            c(exp(`(Intercept)`), exp(`factor(station)2`),
+              exp(`factor(station)3`), exp(`factor(station)4`),
+              exp(`factor(station)5`), exp(`factor(station)6`),
+              exp(`(Intercept)`+`factor(station)2`), exp(`(Intercept)`+`factor(station)3`),
+              exp(`(Intercept)`+`factor(station)4`), exp(`(Intercept)`+`factor(station)5`),
+              exp(`(Intercept)`+`factor(station)6`))}, parameters)
+          parameters <- t(apply(parameters, 1, FUN=function(x){
+            return(quantile(x,probs=c(0.025,0.5,0.975)))
+          }))
+          colnames(parameters)=c('LCL', 'Median','UCL')
 
-          Results[results_mapper(nsim,i,j,k,'naive'),'Prop_Sat_85'] <- as.numeric(by(nbite, nbite$station, FUN=function(x){mean(x$prop_sat>cprop)}))
-          Results[results_mapper(nsim,i,j,k,'adjust'),'Prop_Sat_85'] <- as.numeric(by(nbite, nbite$station, FUN=function(x){mean(x$prop_sat>cprop)}))
-          Results[results_mapper(nsim,i,j,k,'censored_upper85'),'Prop_Sat_85'] <- as.numeric(by(nbite, nbite$station, FUN=function(x){mean(x$prop_sat>cprop)}))
-          Results[results_mapper(nsim,i,j,k,'naive'),'Prop_Sat_100'] <- as.numeric(by(nbite, nbite$station, FUN=function(x){mean(x$prop_sat==1)}))
-          Results[results_mapper(nsim,i,j,k,'adjust'),'Prop_Sat_100'] <- as.numeric(by(nbite, nbite$station, FUN=function(x){mean(x$prop_sat==1)}))
-          Results[results_mapper(nsim,i,j,k,'censored_upper85'),'Prop_Sat_100'] <- as.numeric(by(nbite, nbite$station, FUN=function(x){mean(x$prop_sat==1)}))
-          Results[results_mapper(nsim,i,j,k,'censored_upper85_cprop1'),'Prop_Sat_100'] <- as.numeric(by(nbite, nbite$station, FUN=function(x){mean(x$prop_sat==1)}))
-          Results[results_mapper(nsim,i,j,k,'censored_upper85_cprop1'),'Prop_Sat_85'] <- as.numeric(by(nbite, nbite$station, FUN=function(x){mean(x$prop_sat>cprop)}))
-          Results[results_mapper(nsim,i,j,k,'censored_cprop1'),'Prop_Sat_100'] <- as.numeric(by(nbite, nbite$station, FUN=function(x){mean(x$prop_sat==1)}))
-          Results[results_mapper(nsim,i,j,k,'censored_cprop1'),'Prop_Sat_85'] <- as.numeric(by(nbite, nbite$station, FUN=function(x){mean(x$prop_sat>cprop)}))
-          Results[results_mapper(nsim,i,j,k,'censored'),'Prop_Sat_100'] <- as.numeric(by(nbite, nbite$station, FUN=function(x){mean(x$prop_sat==1)}))
-          Results[results_mapper(nsim,i,j,k,'censored'),'Prop_Sat_85'] <- as.numeric(by(nbite, nbite$station, FUN=function(x){mean(x$prop_sat>cprop)}))
+          Results[results_mapper(nsim,i,j,k,'naive'),'Rel_Bias'][-1] <-
+            parameters[2:6,2] -
+            mean_bite[-1,3]/mean_bite[1,3]
 
-          # fit a naive model that ignores competition
-          dat <- nbite[nbite$species == 3,]
-          dat$event_ID <- 1:dim(dat)[1]
+          Results[results_mapper(nsim,i,j,k,'naive'),'Rel_RMSE'][-1] <-
+            (parameters[2:6,2] -
+               mean_bite[-1,3]/mean_bite[1,3])^2
 
-          mod2 <-
-            tryCatch(
-              {
-                inla(bites ~ factor(station) + f(event_ID, constr=T, model='iid'),
-                     data = dat, family = 'poisson',verbose=F, control.fixed = list(prec.intercept=1e-1),
-                     control.compute = list(config=T))
-              },
-              error=function(cond)
-              {
-                return(NULL)
-              },
-              finally={
+          Results[results_mapper(nsim,i,j,k,'naive'),'Rel_Coverage'][-1] <-
+            ifelse(parameters[2:6,1] <= mean_bite[-1,3]/mean_bite[1,3] & parameters[2:6,3] >= mean_bite[-1,3]/mean_bite[1,3],
+                   1,0)
+          # Compare Medians! Median value equals mean_bite_gen by definition of conditional medians
+          Results[results_mapper(nsim,i,j,k,'naive'),'Bias'] <-
+            parameters[c(1,7:11),2] - mean_bite_gen[,3]
+          Results[results_mapper(nsim,i,j,k,'naive'),'RMSE'] <-
+            (parameters[c(1,7:11),2] - mean_bite_gen[,3])^2
+          Results[results_mapper(nsim,i,j,k,'naive'),'Coverage'] <-
+            ifelse(parameters[c(1,7:11),1] <= mean_bite[,3] & parameters[c(1,7:11),3] >= mean_bite[,3],
+                   1,0)
+        }
 
-              }
-            )
-          if(sum(is.na(mod2$summary.fixed$mean))>0 | mod2$misc$mode.status!=0 )
-          {
-            mod2 <- NULL
-          }
+        # ggplot(data.frame(parameters), aes(y=Median, ymax=UCL, ymin=LCL, x=2:6)) +
+        #   geom_errorbar() +
+        #   geom_line(data = data.frame(x2=2:nstation, y2=mean_bite[-1,3]/mean_bite[1,3], UCL=0, LCL=0), aes(x=x2,y=y2), colour='red') +
+        #   xlab('Station') +
+        #   ylab('Relative Abundance') + ggtitle('The true relative abundance shown in red')
 
-          if(!is.null(mod2))
-          {
-            Results[results_mapper(nsim,i,j,k,'naive'),'Converge'] <- 1
+        dat$bites <- round(dat$bites*comp_factor_fun(1-dat$prop_sat, rep(n_hooks,length(dat$prop_sat))))
 
-            parameters <- inla.posterior.sample(5000,mod2,
-                                                selection = list(`(Intercept)` = 0,
-                                                                 `factor(station)2` = 0,`factor(station)3` = 0,
-                                                                 `factor(station)4` = 0,`factor(station)5` = 0,
-                                                                 `factor(station)6` = 0))
-            parameters <- inla.posterior.sample.eval(fun=function(...){
-              c(exp(`(Intercept)`), exp(`factor(station)2`),
-                exp(`factor(station)3`), exp(`factor(station)4`),
-                exp(`factor(station)5`), exp(`factor(station)6`),
-                exp(`(Intercept)`+`factor(station)2`), exp(`(Intercept)`+`factor(station)3`),
-                exp(`(Intercept)`+`factor(station)4`), exp(`(Intercept)`+`factor(station)5`),
-                exp(`(Intercept)`+`factor(station)6`))}, parameters)
-            parameters <- t(apply(parameters, 1, FUN=function(x){
-              return(quantile(x,probs=c(0.025,0.5,0.975)))
-            }))
-            colnames(parameters)=c('LCL', 'Median','UCL')
+        # ggplot(data.frame(parameters), aes(y=Median, ymax=UCL, ymin=LCL, x=1:6)) +
+        #   geom_errorbar() +
+        #   geom_line(data = data.frame(x2=1:nstation, y2=mean_bite[,3], UCL=0, LCL=0), aes(x=x2,y=y2), colour='red') +
+        #   xlab('Station') +
+        #   ylab('Adjusted Station Abundance') + ggtitle('The true abundance shown in red')
 
-            Results[results_mapper(nsim,i,j,k,'naive'),'Rel_Bias'][-1] <-
-              parameters[2:6,2] -
-              mean_bite[-1,3]/mean_bite[1,3]
+        mod4 <-
+          tryCatch(
+            {
+              inla(bites ~ factor(station) + f(event_ID, constr=T, model='iid'),
+                   data = dat, family = 'poisson',verbose=F,
+                   control.fixed = list(prec.intercept=1e-1),
+                   control.compute = list(config=T))
+            },
+            error=function(cond)
+            {
+              return(NULL)
+            },
+            finally={
 
-            Results[results_mapper(nsim,i,j,k,'naive'),'Rel_RMSE'][-1] <-
-              (parameters[2:6,2] -
-                 mean_bite[-1,3]/mean_bite[1,3])^2
+            }
+          )
+        if(sum(is.na(mod4$summary.fixed$mean))>0 | sum(mod4$misc$mode.status!=0)>0 )
+        {
+          mod4 <- NULL
+        }
 
-            Results[results_mapper(nsim,i,j,k,'naive'),'Rel_Coverage'][-1] <-
-              ifelse(parameters[2:6,1] <= mean_bite[-1,3]/mean_bite[1,3] & parameters[2:6,3] >= mean_bite[-1,3]/mean_bite[1,3],
-                     1,0)
-            # Compare Medians! Median value equals mean_bite_gen by definition of conditional medians
-            Results[results_mapper(nsim,i,j,k,'naive'),'Bias'] <-
-              parameters[c(1,7:11),2] - mean_bite_gen[,3]
-            Results[results_mapper(nsim,i,j,k,'naive'),'RMSE'] <-
-              (parameters[c(1,7:11),2] - mean_bite_gen[,3])^2
-            Results[results_mapper(nsim,i,j,k,'naive'),'Coverage'] <-
-              ifelse(parameters[c(1,7:11),1] <= mean_bite[,3] & parameters[c(1,7:11),3] >= mean_bite[,3],
-                     1,0)
-          }
+        if(!is.null(mod4))
+        {
+          Results[results_mapper(nsim,i,j,k,'adjust'),'Converge'] <- 1
 
-          # ggplot(data.frame(parameters), aes(y=Median, ymax=UCL, ymin=LCL, x=2:6)) +
-          #   geom_errorbar() +
-          #   geom_line(data = data.frame(x2=2:nstation, y2=mean_bite[-1,3]/mean_bite[1,3], UCL=0, LCL=0), aes(x=x2,y=y2), colour='red') +
-          #   xlab('Station') +
-          #   ylab('Relative Abundance') + ggtitle('The true relative abundance shown in red')
+          parameters <- inla.posterior.sample(2000,mod4,
+                                              selection = list(`(Intercept)` = 0,
+                                                               `factor(station)2` = 0,`factor(station)3` = 0,
+                                                               `factor(station)4` = 0,`factor(station)5` = 0,
+                                                               `factor(station)6` = 0))
+          parameters <- inla.posterior.sample.eval(fun=function(...){
+            c(exp(`(Intercept)`), exp(`factor(station)2`),
+              exp(`factor(station)3`), exp(`factor(station)4`),
+              exp(`factor(station)5`), exp(`factor(station)6`),
+              exp(`(Intercept)`+`factor(station)2`), exp(`(Intercept)`+`factor(station)3`),
+              exp(`(Intercept)`+`factor(station)4`), exp(`(Intercept)`+`factor(station)5`),
+              exp(`(Intercept)`+`factor(station)6`))}, parameters)
+          parameters <- t(apply(parameters, 1, FUN=function(x){
+            return(quantile(x,probs=c(0.025,0.5,0.975)))
+          }))
+          colnames(parameters)=c('LCL', 'Median','UCL')
 
-          dat$bites <- round(dat$bites*comp_factor_fun(1-dat$prop_sat, rep(n_hooks,length(dat$prop_sat))))
+          Results[results_mapper(nsim,i,j,k,'adjust'),'Rel_Bias'][-1] <-
+            parameters[2:6,2] -
+            mean_bite[-1,3]/mean_bite[1,3]
 
-          # ggplot(data.frame(parameters), aes(y=Median, ymax=UCL, ymin=LCL, x=1:6)) +
-          #   geom_errorbar() +
-          #   geom_line(data = data.frame(x2=1:nstation, y2=mean_bite[,3], UCL=0, LCL=0), aes(x=x2,y=y2), colour='red') +
-          #   xlab('Station') +
-          #   ylab('Adjusted Station Abundance') + ggtitle('The true abundance shown in red')
+          Results[results_mapper(nsim,i,j,k,'adjust'),'Rel_RMSE'][-1] <-
+            (parameters[2:6,2] -
+               mean_bite[-1,3]/mean_bite[1,3])^2
 
-          mod4 <-
-            tryCatch(
-              {
-                inla(bites ~ factor(station) + f(event_ID, constr=T, model='iid'),
-                     data = dat, family = 'poisson',verbose=F,
-                     control.fixed = list(prec.intercept=1e-1),
-                     control.compute = list(config=T))
-              },
-              error=function(cond)
-              {
-                return(NULL)
-              },
-              finally={
-
-              }
-            )
-          if(sum(is.na(mod4$summary.fixed$mean))>0 | mod4$misc$mode.status!=0 )
-          {
-            mod4 <- NULL
-          }
-
-          if(!is.null(mod4))
-          {
-            Results[results_mapper(nsim,i,j,k,'adjust'),'Converge'] <- 1
-
-            parameters <- inla.posterior.sample(5000,mod4,
-                                                selection = list(`(Intercept)` = 0,
-                                                                 `factor(station)2` = 0,`factor(station)3` = 0,
-                                                                 `factor(station)4` = 0,`factor(station)5` = 0,
-                                                                 `factor(station)6` = 0))
-            parameters <- inla.posterior.sample.eval(fun=function(...){
-              c(exp(`(Intercept)`), exp(`factor(station)2`),
-                exp(`factor(station)3`), exp(`factor(station)4`),
-                exp(`factor(station)5`), exp(`factor(station)6`),
-                exp(`(Intercept)`+`factor(station)2`), exp(`(Intercept)`+`factor(station)3`),
-                exp(`(Intercept)`+`factor(station)4`), exp(`(Intercept)`+`factor(station)5`),
-                exp(`(Intercept)`+`factor(station)6`))}, parameters)
-            parameters <- t(apply(parameters, 1, FUN=function(x){
-              return(quantile(x,probs=c(0.025,0.5,0.975)))
-            }))
-            colnames(parameters)=c('LCL', 'Median','UCL')
-
-            Results[results_mapper(nsim,i,j,k,'adjust'),'Rel_Bias'][-1] <-
-              parameters[2:6,2] -
-              mean_bite[-1,3]/mean_bite[1,3]
-
-            Results[results_mapper(nsim,i,j,k,'adjust'),'Rel_RMSE'][-1] <-
-              (parameters[2:6,2] -
-                 mean_bite[-1,3]/mean_bite[1,3])^2
-
-            Results[results_mapper(nsim,i,j,k,'adjust'),'Rel_Coverage'][-1] <-
-              ifelse(parameters[2:6,1] <= mean_bite[-1,3]/mean_bite[1,3] & parameters[2:6,3] >= mean_bite[-1,3]/mean_bite[1,3],
-                     1,0)
-            Results[results_mapper(nsim,i,j,k,'adjust'),'Bias'] <-
-              parameters[c(1,7:11),2] - mean_bite_gen[,3]
-            Results[results_mapper(nsim,i,j,k,'adjust'),'RMSE'] <-
-              (parameters[c(1,7:11),2] - mean_bite_gen[,3])^2
-            Results[results_mapper(nsim,i,j,k,'adjust'),'Coverage'] <-
-              ifelse(parameters[c(1,7:11),1] <= mean_bite[,3] & parameters[c(1,7:11),3] >= mean_bite[,3],
-                     1,0)
-          }
+          Results[results_mapper(nsim,i,j,k,'adjust'),'Rel_Coverage'][-1] <-
+            ifelse(parameters[2:6,1] <= mean_bite[-1,3]/mean_bite[1,3] & parameters[2:6,3] >= mean_bite[-1,3]/mean_bite[1,3],
+                   1,0)
+          Results[results_mapper(nsim,i,j,k,'adjust'),'Bias'] <-
+            parameters[c(1,7:11),2] - mean_bite_gen[,3]
+          Results[results_mapper(nsim,i,j,k,'adjust'),'RMSE'] <-
+            (parameters[c(1,7:11),2] - mean_bite_gen[,3])^2
+          Results[results_mapper(nsim,i,j,k,'adjust'),'Coverage'] <-
+            ifelse(parameters[c(1,7:11),1] <= mean_bite[,3] & parameters[c(1,7:11),3] >= mean_bite[,3],
+                   1,0)
+        }
 
 
-          # ggplot(data.frame(parameters), aes(y=Median, ymax=UCL, ymin=LCL, x=2:6)) +
-          #   geom_errorbar() +
-          #   geom_line(data = data.frame(x2=2:nstation, y2=mean_bite[-1,3]/mean_bite[1,3], UCL=0, LCL=0), aes(x=x2,y=y2), colour='red') +
-          #   xlab('Station') +
-          #   ylab('Adjusted Relative Abundance') + ggtitle('The true relative abundance shown in red')
+        # ggplot(data.frame(parameters), aes(y=Median, ymax=UCL, ymin=LCL, x=2:6)) +
+        #   geom_errorbar() +
+        #   geom_line(data = data.frame(x2=2:nstation, y2=mean_bite[-1,3]/mean_bite[1,3], UCL=0, LCL=0), aes(x=x2,y=y2), colour='red') +
+        #   xlab('Station') +
+        #   ylab('Adjusted Relative Abundance') + ggtitle('The true relative abundance shown in red')
 
-          # censorship interval
-          upper_bound <- rep(0, length(nbite[nbite$species==3,]$prop_sat))
-          species_1_uncensoredprop <- 0.5
-          if(cprop < 1)
-          {
+        # censorship interval
+        upper_bound <- rep(0, length(nbite[nbite$species==3,]$prop_sat))
+        species_1_uncensoredprop <- 0.5
+        if(cprop < 1)
+        {
 
-            # Use the Baranov Catch equation to (starting at 85% saturation) to derive scale factor
-            dat <- nbite[nbite$species==3,]
-            scale_fac <- rep(0, length(dat$bites))
-            scale_fac[dat$prop_sat>cprop] <-
-              comp_factor_fun(1-signif((dat[dat$prop_sat>cprop,]$prop_sat-cprop)/(1-cprop),5),
-                              rep(round((1-cprop)*n_hooks),sum(dat$prop_sat>cprop)))
-
-            upper_bound[dat$prop_sat>cprop] <- round(
-              (dat$prop_sat[dat$prop_sat>cprop]-cprop)*n_hooks*
-                scale_fac[dat$prop_sat>cprop])
-
-          }
+          # Use the Baranov Catch equation to (starting at 85% saturation) to derive scale factor
           dat <- nbite[nbite$species==3,]
-          dat$low <- rep(Inf,dim(dat)[1])
-          dat$high <- rep(Inf,dim(dat)[1])
+          scale_fac <- rep(0, length(dat$bites))
+          scale_fac[dat$prop_sat>cprop] <-
+            comp_factor_fun(1-signif((dat[dat$prop_sat>cprop,]$prop_sat-cprop)/(1-cprop),5),
+                            rep(round((1-cprop)*n_hooks),sum(dat$prop_sat>cprop)))
 
-          quant_regions <-
-            as.numeric(by(dat$bites,
-                      dat$station,
-                      FUN = function(x){quantile(x,0.85, na.rm=T)}, simplify = T))
+          upper_bound[dat$prop_sat>cprop] <- round(
+            (dat$prop_sat[dat$prop_sat>cprop]-cprop)*n_hooks*
+              scale_fac[dat$prop_sat>cprop])
 
-          quant_regions2 <- rep(0, nstation)
-            #  as.numeric(by(dat$bites,
-            #                dat$station,
-            #                FUN = function(x){quantile(x,lower_bound_quantile, na.rm=T)}, simplify = T))
-            # #
-          #quant_regions <- rep(quantile(dat$bites, upper_bound_quantile), nstation)
+        }
+        dat <- nbite[nbite$species==3,]
+        dat$low <- rep(Inf,dim(dat)[1])
+        dat$high <- rep(Inf,dim(dat)[1])
 
-          #upper_bound <- pmin( round(upper_bound), quant_regions[dat$station]-dat$bites)
+        quant_regions <-
+          as.numeric(by(dat$bites,
+                        dat$station,
+                        FUN = function(x){quantile(x,0.85, na.rm=T)}, simplify = T))
 
-          dat$low[which(dat$prop_sat >= cprop &
-                          0 < upper_bound &
-                          dat$bites <= quant_regions[dat$station] &
-                          dat$bites >= quant_regions2[dat$station])] <-
-            as.matrix(dat[which(dat$prop_sat >= cprop &
-                                  0 < upper_bound &
-                                  dat$bites <= quant_regions[dat$station] &
-                                  dat$bites >= quant_regions2[dat$station]),
-                          c('bites')])[,1]
+        quant_regions2 <- rep(0, nstation)
+        #  as.numeric(by(dat$bites,
+        #                dat$station,
+        #                FUN = function(x){quantile(x,lower_bound_quantile, na.rm=T)}, simplify = T))
+        # #
+        #quant_regions <- rep(quantile(dat$bites, upper_bound_quantile), nstation)
 
-          dat$high[which(dat$prop_sat >= cprop &
-                           0 < upper_bound &
-                           dat$bites <= quant_regions[dat$station] &
-                     dat$bites >= quant_regions2[dat$station])] <-
-            dat$bites[which(dat$prop_sat >= cprop &
-                              0 < upper_bound &
-                              dat$bites <= quant_regions[dat$station] &
-                              dat$bites >= quant_regions2[dat$station])] +
-            upper_bound[which(dat$prop_sat >= cprop &
+        #upper_bound <- pmin( round(upper_bound), quant_regions[dat$station]-dat$bites)
+
+        dat$low[which(dat$prop_sat >= cprop &
+                        0 < upper_bound &
+                        dat$bites <= quant_regions[dat$station] &
+                        dat$bites >= quant_regions2[dat$station])] <-
+          as.matrix(dat[which(dat$prop_sat >= cprop &
                                 0 < upper_bound &
                                 dat$bites <= quant_regions[dat$station] &
-                                dat$bites >= quant_regions2[dat$station])]
+                                dat$bites >= quant_regions2[dat$station]),
+                        c('bites')])[,1]
+
+        dat$high[which(dat$prop_sat >= cprop &
+                         0 < upper_bound &
+                         dat$bites <= quant_regions[dat$station] &
+                         dat$bites >= quant_regions2[dat$station])] <-
+          dat$bites[which(dat$prop_sat >= cprop &
+                            0 < upper_bound &
+                            dat$bites <= quant_regions[dat$station] &
+                            dat$bites >= quant_regions2[dat$station])] +
+          upper_bound[which(dat$prop_sat >= cprop &
+                              0 < upper_bound &
+                              dat$bites <= quant_regions[dat$station] &
+                              dat$bites >= quant_regions2[dat$station])]
 
 
-          ind_resp <- which(names(dat) %in% c('bites', 'low', 'high'))
+        ind_resp <- which(names(dat) %in% c('bites', 'low', 'high'))
 
-          dat$event_ID <- 1:dim(dat)[1]
+        dat$event_ID <- 1:dim(dat)[1]
 
-          mod6 <-
-            tryCatch(
-              {
-                inla(formula = inla.mdata(cbind(bites,low,high)) ~ factor(station) + f(event_ID, constr=T, model='iid'),
-                     family="cenpoisson2",verbose=F,
-                     data= dat, control.fixed = list(prec.intercept=1e-1),
-                     control.compute = list(config=T),
-                     control.mode = list(result=mod2, restart=T))
-              },
-              error=function(cond)
-              {
-                return(NULL)
-              },
-              finally={
-
-              }
-            )
-          if(sum(is.na(mod6$summary.fixed$mean))>0 | mod6$misc$mode.status!=0 )
-          {
-            mod6 <- NULL
-          }
-
-          if(!is.null(mod6))
-          {
-            Results[results_mapper(nsim,i,j,k,'censored_upper85'),'Converge'] <- 1
-
-            parameters <- inla.posterior.sample(5000,mod6,
-                                                selection = list(`(Intercept)` = 0,
-                                                                 `factor(station)2` = 0,`factor(station)3` = 0,
-                                                                 `factor(station)4` = 0,`factor(station)5` = 0,
-                                                                 `factor(station)6` = 0))
-            parameters <- inla.posterior.sample.eval(fun=function(...){
-              c(exp(`(Intercept)`), exp(`factor(station)2`),
-                exp(`factor(station)3`), exp(`factor(station)4`),
-                exp(`factor(station)5`), exp(`factor(station)6`),
-                exp(`(Intercept)`+`factor(station)2`), exp(`(Intercept)`+`factor(station)3`),
-                exp(`(Intercept)`+`factor(station)4`), exp(`(Intercept)`+`factor(station)5`),
-                exp(`(Intercept)`+`factor(station)6`))}, parameters)
-            parameters <- t(apply(parameters, 1, FUN=function(x){
-              return(quantile(x,probs=c(0.025,0.5,0.975)))
-            }))
-            colnames(parameters)=c('LCL', 'Median','UCL')
-
-            Results[results_mapper(nsim,i,j,k,'censored_upper85'),'Rel_Bias'][-1] <-
-              parameters[2:6,2] -
-              mean_bite[-1,3]/mean_bite[1,3]
-
-            Results[results_mapper(nsim,i,j,k,'censored_upper85'),'Rel_RMSE'][-1] <-
-              (parameters[2:6,2] -
-                 mean_bite[-1,3]/mean_bite[1,3])^2
-
-            Results[results_mapper(nsim,i,j,k,'censored_upper85'),'Rel_Coverage'][-1] <-
-              ifelse(parameters[2:6,1] <= mean_bite[-1,3]/mean_bite[1,3] & parameters[2:6,3] >= mean_bite[-1,3]/mean_bite[1,3],
-                     1,0)
-            Results[results_mapper(nsim,i,j,k,'censored_upper85'),'Bias'] <-
-              parameters[c(1,7:11),2] - mean_bite_gen[,3]
-            Results[results_mapper(nsim,i,j,k,'censored_upper85'),'RMSE'] <-
-              (parameters[c(1,7:11),2] - mean_bite_gen[,3])^2
-            Results[results_mapper(nsim,i,j,k,'censored_upper85'),'Coverage'] <-
-              ifelse(parameters[c(1,7:11),1] <= mean_bite[,3] & parameters[c(1,7:11),3] >= mean_bite[,3],
-                     1,0)
-          }
-
-          ### Repeat for other censored models with differing upper observations
-
-          dat <- nbite[nbite$species==3,]
-          dat$low <- rep(Inf,dim(dat)[1])
-          dat$high <- rep(Inf,dim(dat)[1])
-
-          quant_regions2 <- rep(0, nstation)
-          #  as.numeric(by(dat$bites,
-          #                dat$station,
-          #                FUN = function(x){quantile(x,lower_bound_quantile, na.rm=T)}, simplify = T))
-          # #
-          #quant_regions <- rep(quantile(dat$bites, upper_bound_quantile), nstation)
-
-          #upper_bound <- pmin( round(upper_bound), quant_regions[dat$station]-dat$bites)
-
-          dat$low[which(dat$prop_sat >= 1 &
-                          dat$bites <= quant_regions[dat$station] &
-                          dat$bites >= quant_regions2[dat$station])] <-
-            as.matrix(dat[which(dat$prop_sat >= 1 &
-                                  dat$bites <= quant_regions[dat$station] &
-                                  dat$bites >= quant_regions2[dat$station]),
-                          c('bites')])[,1]
-
-          ind_resp <- which(names(dat) %in% c('bites', 'low', 'high'))
-
-          dat$event_ID <- 1:dim(dat)[1]
-
-
-          mod8 <-
-            tryCatch(
-              {
-                inla(formula = inla.mdata(cbind(bites,low,high)) ~ factor(station) + f(event_ID, constr=T, model='iid'),
-                     family="cenpoisson2",verbose=F,
-                     data= dat, control.fixed = list(prec.intercept=1e-1),
-                     control.compute = list(config=T),
-                     control.mode = list(result=mod2, restart=T))
-              },
-              error=function(cond)
-              {
-                return(NULL)
-              },
-              finally={
-
-              }
-            )
-          if(sum(is.na(mod8$summary.fixed$mean))>0 | mod8$misc$mode.status!=0 )
-          {
-            mod8 <- NULL
-          }
-
-          if(!is.null(mod8))
-          {
-            Results[results_mapper(nsim,i,j,k,'censored_upper85_cprop1'),'Converge'] <- 1
-
-            parameters <- inla.posterior.sample(5000,mod8,
-                                                selection = list(`(Intercept)` = 0,
-                                                                 `factor(station)2` = 0,`factor(station)3` = 0,
-                                                                 `factor(station)4` = 0,`factor(station)5` = 0,
-                                                                 `factor(station)6` = 0))
-            parameters <- inla.posterior.sample.eval(fun=function(...){
-              c(exp(`(Intercept)`), exp(`factor(station)2`),
-                exp(`factor(station)3`), exp(`factor(station)4`),
-                exp(`factor(station)5`), exp(`factor(station)6`),
-                exp(`(Intercept)`+`factor(station)2`), exp(`(Intercept)`+`factor(station)3`),
-                exp(`(Intercept)`+`factor(station)4`), exp(`(Intercept)`+`factor(station)5`),
-                exp(`(Intercept)`+`factor(station)6`))}, parameters)
-            parameters <- t(apply(parameters, 1, FUN=function(x){
-              return(quantile(x,probs=c(0.025,0.5,0.975)))
-            }))
-            colnames(parameters)=c('LCL', 'Median','UCL')
-
-            Results[results_mapper(nsim,i,j,k,'censored_upper85_cprop1'),'Rel_Bias'][-1] <-
-              parameters[2:6,2] -
-              mean_bite[-1,3]/mean_bite[1,3]
-
-            Results[results_mapper(nsim,i,j,k,'censored_upper85_cprop1'),'Rel_RMSE'][-1] <-
-              (parameters[2:6,2] -
-                 mean_bite[-1,3]/mean_bite[1,3])^2
-
-            Results[results_mapper(nsim,i,j,k,'censored_upper85_cprop1'),'Rel_Coverage'][-1] <-
-              ifelse(parameters[2:6,1] <= mean_bite[-1,3]/mean_bite[1,3] & parameters[2:6,3] >= mean_bite[-1,3]/mean_bite[1,3],
-                     1,0)
-            Results[results_mapper(nsim,i,j,k,'censored_upper85_cprop1'),'Bias'] <-
-              parameters[c(1,7:11),2] - mean_bite_gen[,3]
-            Results[results_mapper(nsim,i,j,k,'censored_upper85_cprop1'),'RMSE'] <-
-              (parameters[c(1,7:11),2] - mean_bite_gen[,3])^2
-            Results[results_mapper(nsim,i,j,k,'censored_upper85_cprop1'),'Coverage'] <-
-              ifelse(parameters[c(1,7:11),1] <= mean_bite[,3] & parameters[c(1,7:11),3] >= mean_bite[,3],
-                     1,0)
-          }
-
-          dat <- nbite[nbite$species==3,]
-          dat$low <- rep(Inf,dim(dat)[1])
-          dat$high <- rep(Inf,dim(dat)[1])
-
-          quant_regions2 <- rep(0, nstation)
-          #  as.numeric(by(dat$bites,
-          #                dat$station,
-          #                FUN = function(x){quantile(x,lower_bound_quantile, na.rm=T)}, simplify = T))
-          # #
-          #quant_regions <- rep(quantile(dat$bites, upper_bound_quantile), nstation)
-
-          #upper_bound <- pmin( round(upper_bound), quant_regions[dat$station]-dat$bites)
-
-          dat$low[which(dat$prop_sat == 1)] <-
-            as.matrix(dat[which(dat$prop_sat ==1),
-                          c('bites')])[,1]
-
-          ind_resp <- which(names(dat) %in% c('bites', 'low', 'high'))
-
-          dat$event_ID <- 1:dim(dat)[1]
-
-            mod10 <-
-              tryCatch(
-                {
-                  inla(formula = inla.mdata(cbind(bites,low,high)) ~ factor(station) + f(event_ID, constr=T, model='iid'),
-                       family="cenpoisson2",verbose=F,
-                       data= dat, control.fixed = list(prec.intercept=1e-1),
-                       control.compute = list(config=T),
-                       control.mode = list(result=mod2, restart=T))
-                },
-                error=function(cond)
-                {
-                  return(NULL)
-                },
-                finally={
-
-                }
-              )
-            if(sum(is.na(mod10$summary.fixed$mean))>0 | mod10$misc$mode.status!=0 )
+        mod6 <-
+          tryCatch(
             {
-              mod10 <- NULL
+              inla(formula = inla.mdata(cbind(bites,low,high)) ~ factor(station) + f(event_ID, constr=T, model='iid'),
+                   family="cenpoisson2",verbose=F,
+                   data= dat, control.fixed = list(prec.intercept=1e-1),
+                   control.compute = list(config=T),
+                   control.mode = list(result=mod2, restart=T))
+            },
+            error=function(cond)
+            {
+              return(NULL)
+            },
+            finally={
+
             }
+          )
+        if(sum(is.na(mod6$summary.fixed$mean))>0 | sum(mod6$misc$mode.status!=0)>0 )
+        {
+          mod6 <- NULL
+        }
 
-            if(!is.null(mod10))
+        if(!is.null(mod6))
+        {
+          Results[results_mapper(nsim,i,j,k,'censored_upper85'),'Converge'] <- 1
+
+          parameters <- inla.posterior.sample(2000,mod6,
+                                              selection = list(`(Intercept)` = 0,
+                                                               `factor(station)2` = 0,`factor(station)3` = 0,
+                                                               `factor(station)4` = 0,`factor(station)5` = 0,
+                                                               `factor(station)6` = 0))
+          parameters <- inla.posterior.sample.eval(fun=function(...){
+            c(exp(`(Intercept)`), exp(`factor(station)2`),
+              exp(`factor(station)3`), exp(`factor(station)4`),
+              exp(`factor(station)5`), exp(`factor(station)6`),
+              exp(`(Intercept)`+`factor(station)2`), exp(`(Intercept)`+`factor(station)3`),
+              exp(`(Intercept)`+`factor(station)4`), exp(`(Intercept)`+`factor(station)5`),
+              exp(`(Intercept)`+`factor(station)6`))}, parameters)
+          parameters <- t(apply(parameters, 1, FUN=function(x){
+            return(quantile(x,probs=c(0.025,0.5,0.975)))
+          }))
+          colnames(parameters)=c('LCL', 'Median','UCL')
+
+          Results[results_mapper(nsim,i,j,k,'censored_upper85'),'Rel_Bias'][-1] <-
+            parameters[2:6,2] -
+            mean_bite[-1,3]/mean_bite[1,3]
+
+          Results[results_mapper(nsim,i,j,k,'censored_upper85'),'Rel_RMSE'][-1] <-
+            (parameters[2:6,2] -
+               mean_bite[-1,3]/mean_bite[1,3])^2
+
+          Results[results_mapper(nsim,i,j,k,'censored_upper85'),'Rel_Coverage'][-1] <-
+            ifelse(parameters[2:6,1] <= mean_bite[-1,3]/mean_bite[1,3] & parameters[2:6,3] >= mean_bite[-1,3]/mean_bite[1,3],
+                   1,0)
+          Results[results_mapper(nsim,i,j,k,'censored_upper85'),'Bias'] <-
+            parameters[c(1,7:11),2] - mean_bite_gen[,3]
+          Results[results_mapper(nsim,i,j,k,'censored_upper85'),'RMSE'] <-
+            (parameters[c(1,7:11),2] - mean_bite_gen[,3])^2
+          Results[results_mapper(nsim,i,j,k,'censored_upper85'),'Coverage'] <-
+            ifelse(parameters[c(1,7:11),1] <= mean_bite[,3] & parameters[c(1,7:11),3] >= mean_bite[,3],
+                   1,0)
+        }
+
+        ### Repeat for other censored models with differing upper observations
+
+        dat <- nbite[nbite$species==3,]
+        dat$low <- rep(Inf,dim(dat)[1])
+        dat$high <- rep(Inf,dim(dat)[1])
+
+        quant_regions2 <- rep(0, nstation)
+        #  as.numeric(by(dat$bites,
+        #                dat$station,
+        #                FUN = function(x){quantile(x,lower_bound_quantile, na.rm=T)}, simplify = T))
+        # #
+        #quant_regions <- rep(quantile(dat$bites, upper_bound_quantile), nstation)
+
+        #upper_bound <- pmin( round(upper_bound), quant_regions[dat$station]-dat$bites)
+
+        dat$low[which(dat$prop_sat >= 1 &
+                        dat$bites <= quant_regions[dat$station] &
+                        dat$bites >= quant_regions2[dat$station])] <-
+          as.matrix(dat[which(dat$prop_sat >= 1 &
+                                dat$bites <= quant_regions[dat$station] &
+                                dat$bites >= quant_regions2[dat$station]),
+                        c('bites')])[,1]
+
+        ind_resp <- which(names(dat) %in% c('bites', 'low', 'high'))
+
+        dat$event_ID <- 1:dim(dat)[1]
+
+
+        mod8 <-
+          tryCatch(
             {
-              Results[results_mapper(nsim,i,j,k,'censored_cprop1'),'Converge'] <- 1
+              inla(formula = inla.mdata(cbind(bites,low,high)) ~ factor(station) + f(event_ID, constr=T, model='iid'),
+                   family="cenpoisson2",verbose=F,
+                   data= dat, control.fixed = list(prec.intercept=1e-1),
+                   control.compute = list(config=T),
+                   control.mode = list(result=mod2, restart=T))
+            },
+            error=function(cond)
+            {
+              return(NULL)
+            },
+            finally={
 
-              parameters <- inla.posterior.sample(5000,mod10,
-                       selection = list(`(Intercept)` = 0,
-                                        `factor(station)2` = 0,`factor(station)3` = 0,
-                       `factor(station)4` = 0,`factor(station)5` = 0,
-                       `factor(station)6` = 0))
-              parameters <- inla.posterior.sample.eval(fun=function(...){
-                c(exp(`(Intercept)`), exp(`factor(station)2`),
-                  exp(`factor(station)3`), exp(`factor(station)4`),
-                  exp(`factor(station)5`), exp(`factor(station)6`),
-                  exp(`(Intercept)`+`factor(station)2`), exp(`(Intercept)`+`factor(station)3`),
-                  exp(`(Intercept)`+`factor(station)4`), exp(`(Intercept)`+`factor(station)5`),
-                  exp(`(Intercept)`+`factor(station)6`))}, parameters)
-              parameters <- t(apply(parameters, 1, FUN=function(x){
-                return(quantile(x,probs=c(0.025,0.5,0.975)))
-              }))
-              colnames(parameters)=c('LCL', 'Median','UCL')
+            }
+          )
+        if(sum(is.na(mod8$summary.fixed$mean))>0 | sum(mod8$misc$mode.status!=0)>0 )
+        {
+          mod8 <- NULL
+        }
 
-              Results[results_mapper(nsim,i,j,k,'censored_cprop1'),'Rel_Bias'][-1] <-
-                parameters[2:6,2] -
-                mean_bite[-1,3]/mean_bite[1,3]
+        if(!is.null(mod8))
+        {
+          Results[results_mapper(nsim,i,j,k,'censored_upper85_cprop1'),'Converge'] <- 1
 
-              Results[results_mapper(nsim,i,j,k,'censored_cprop1'),'Rel_RMSE'][-1] <-
-                (parameters[2:6,2] -
-                mean_bite[-1,3]/mean_bite[1,3])^2
+          parameters <- inla.posterior.sample(2000,mod8,
+                                              selection = list(`(Intercept)` = 0,
+                                                               `factor(station)2` = 0,`factor(station)3` = 0,
+                                                               `factor(station)4` = 0,`factor(station)5` = 0,
+                                                               `factor(station)6` = 0))
+          parameters <- inla.posterior.sample.eval(fun=function(...){
+            c(exp(`(Intercept)`), exp(`factor(station)2`),
+              exp(`factor(station)3`), exp(`factor(station)4`),
+              exp(`factor(station)5`), exp(`factor(station)6`),
+              exp(`(Intercept)`+`factor(station)2`), exp(`(Intercept)`+`factor(station)3`),
+              exp(`(Intercept)`+`factor(station)4`), exp(`(Intercept)`+`factor(station)5`),
+              exp(`(Intercept)`+`factor(station)6`))}, parameters)
+          parameters <- t(apply(parameters, 1, FUN=function(x){
+            return(quantile(x,probs=c(0.025,0.5,0.975)))
+          }))
+          colnames(parameters)=c('LCL', 'Median','UCL')
 
-              Results[results_mapper(nsim,i,j,k,'censored_cprop1'),'Rel_Coverage'][-1] <-
-                ifelse(parameters[2:6,1] <= mean_bite[-1,3]/mean_bite[1,3] & parameters[2:6,3] >= mean_bite[-1,3]/mean_bite[1,3],
-                       1,0)
-              Results[results_mapper(nsim,i,j,k,'censored_cprop1'),'Bias'] <-
-                parameters[c(1,7:11),2] - mean_bite_gen[,3]
-              Results[results_mapper(nsim,i,j,k,'censored_cprop1'),'RMSE'] <-
-                (parameters[c(1,7:11),2] - mean_bite_gen[,3])^2
-              Results[results_mapper(nsim,i,j,k,'censored_cprop1'),'Coverage'] <-
-                ifelse(parameters[c(1,7:11),1] <= mean_bite[,3] & parameters[c(1,7:11),3] >= mean_bite[,3],
-                       1,0)
-          }
+          Results[results_mapper(nsim,i,j,k,'censored_upper85_cprop1'),'Rel_Bias'][-1] <-
+            parameters[2:6,2] -
+            mean_bite[-1,3]/mean_bite[1,3]
 
-          dat <- nbite[nbite$species==3,]
-          dat$low <- rep(Inf,dim(dat)[1])
-          dat$high <- rep(Inf,dim(dat)[1])
+          Results[results_mapper(nsim,i,j,k,'censored_upper85_cprop1'),'Rel_RMSE'][-1] <-
+            (parameters[2:6,2] -
+               mean_bite[-1,3]/mean_bite[1,3])^2
 
-          dat$low[which(dat$prop_sat >= cprop &
-                          0 < upper_bound)] <-
-            as.matrix(dat[which(dat$prop_sat >= cprop &
-                                  0 < upper_bound),
-                          c('bites')])[,1]
+          Results[results_mapper(nsim,i,j,k,'censored_upper85_cprop1'),'Rel_Coverage'][-1] <-
+            ifelse(parameters[2:6,1] <= mean_bite[-1,3]/mean_bite[1,3] & parameters[2:6,3] >= mean_bite[-1,3]/mean_bite[1,3],
+                   1,0)
+          Results[results_mapper(nsim,i,j,k,'censored_upper85_cprop1'),'Bias'] <-
+            parameters[c(1,7:11),2] - mean_bite_gen[,3]
+          Results[results_mapper(nsim,i,j,k,'censored_upper85_cprop1'),'RMSE'] <-
+            (parameters[c(1,7:11),2] - mean_bite_gen[,3])^2
+          Results[results_mapper(nsim,i,j,k,'censored_upper85_cprop1'),'Coverage'] <-
+            ifelse(parameters[c(1,7:11),1] <= mean_bite[,3] & parameters[c(1,7:11),3] >= mean_bite[,3],
+                   1,0)
+        }
 
-          dat$high[which(dat$prop_sat >= cprop &
-                           0 < upper_bound)] <-
-            dat$bites[which(dat$prop_sat >= cprop &
-                              0 < upper_bound)] +
-            upper_bound[which(dat$prop_sat >= cprop &
-                                0 < upper_bound)]
+        dat <- nbite[nbite$species==3,]
+        dat$low <- rep(Inf,dim(dat)[1])
+        dat$high <- rep(Inf,dim(dat)[1])
+
+        quant_regions2 <- rep(0, nstation)
+        #  as.numeric(by(dat$bites,
+        #                dat$station,
+        #                FUN = function(x){quantile(x,lower_bound_quantile, na.rm=T)}, simplify = T))
+        # #
+        #quant_regions <- rep(quantile(dat$bites, upper_bound_quantile), nstation)
+
+        #upper_bound <- pmin( round(upper_bound), quant_regions[dat$station]-dat$bites)
+
+        dat$low[which(dat$prop_sat == 1)] <-
+          as.matrix(dat[which(dat$prop_sat ==1),
+                        c('bites')])[,1]
+
+        ind_resp <- which(names(dat) %in% c('bites', 'low', 'high'))
+
+        dat$event_ID <- 1:dim(dat)[1]
+
+        mod10 <-
+          tryCatch(
+            {
+              inla(formula = inla.mdata(cbind(bites,low,high)) ~ factor(station) + f(event_ID, constr=T, model='iid'),
+                   family="cenpoisson2",verbose=F,
+                   data= dat, control.fixed = list(prec.intercept=1e-1),
+                   control.compute = list(config=T),
+                   control.mode = list(result=mod2, restart=T))
+            },
+            error=function(cond)
+            {
+              return(NULL)
+            },
+            finally={
+
+            }
+          )
+        if(sum(is.na(mod10$summary.fixed$mean))>0 | sum(mod10$misc$mode.status!=0)>0 )
+        {
+          mod10 <- NULL
+        }
+
+        if(!is.null(mod10))
+        {
+          Results[results_mapper(nsim,i,j,k,'censored_cprop1'),'Converge'] <- 1
+
+          parameters <- inla.posterior.sample(2000,mod10,
+                                              selection = list(`(Intercept)` = 0,
+                                                               `factor(station)2` = 0,`factor(station)3` = 0,
+                                                               `factor(station)4` = 0,`factor(station)5` = 0,
+                                                               `factor(station)6` = 0))
+          parameters <- inla.posterior.sample.eval(fun=function(...){
+            c(exp(`(Intercept)`), exp(`factor(station)2`),
+              exp(`factor(station)3`), exp(`factor(station)4`),
+              exp(`factor(station)5`), exp(`factor(station)6`),
+              exp(`(Intercept)`+`factor(station)2`), exp(`(Intercept)`+`factor(station)3`),
+              exp(`(Intercept)`+`factor(station)4`), exp(`(Intercept)`+`factor(station)5`),
+              exp(`(Intercept)`+`factor(station)6`))}, parameters)
+          parameters <- t(apply(parameters, 1, FUN=function(x){
+            return(quantile(x,probs=c(0.025,0.5,0.975)))
+          }))
+          colnames(parameters)=c('LCL', 'Median','UCL')
+
+          Results[results_mapper(nsim,i,j,k,'censored_cprop1'),'Rel_Bias'][-1] <-
+            parameters[2:6,2] -
+            mean_bite[-1,3]/mean_bite[1,3]
+
+          Results[results_mapper(nsim,i,j,k,'censored_cprop1'),'Rel_RMSE'][-1] <-
+            (parameters[2:6,2] -
+               mean_bite[-1,3]/mean_bite[1,3])^2
+
+          Results[results_mapper(nsim,i,j,k,'censored_cprop1'),'Rel_Coverage'][-1] <-
+            ifelse(parameters[2:6,1] <= mean_bite[-1,3]/mean_bite[1,3] & parameters[2:6,3] >= mean_bite[-1,3]/mean_bite[1,3],
+                   1,0)
+          Results[results_mapper(nsim,i,j,k,'censored_cprop1'),'Bias'] <-
+            parameters[c(1,7:11),2] - mean_bite_gen[,3]
+          Results[results_mapper(nsim,i,j,k,'censored_cprop1'),'RMSE'] <-
+            (parameters[c(1,7:11),2] - mean_bite_gen[,3])^2
+          Results[results_mapper(nsim,i,j,k,'censored_cprop1'),'Coverage'] <-
+            ifelse(parameters[c(1,7:11),1] <= mean_bite[,3] & parameters[c(1,7:11),3] >= mean_bite[,3],
+                   1,0)
+        }
+
+        dat <- nbite[nbite$species==3,]
+        dat$low <- rep(Inf,dim(dat)[1])
+        dat$high <- rep(Inf,dim(dat)[1])
+
+        dat$low[which(dat$prop_sat >= cprop &
+                        0 < upper_bound)] <-
+          as.matrix(dat[which(dat$prop_sat >= cprop &
+                                0 < upper_bound),
+                        c('bites')])[,1]
+
+        dat$high[which(dat$prop_sat >= cprop &
+                         0 < upper_bound)] <-
+          dat$bites[which(dat$prop_sat >= cprop &
+                            0 < upper_bound)] +
+          upper_bound[which(dat$prop_sat >= cprop &
+                              0 < upper_bound)]
 
 
-          ind_resp <- which(names(dat) %in% c('bites', 'low', 'high'))
+        ind_resp <- which(names(dat) %in% c('bites', 'low', 'high'))
 
-          dat$event_ID <- 1:dim(dat)[1]
+        dat$event_ID <- 1:dim(dat)[1]
 
 
-          mod12 <-
-            tryCatch(
-              {
-                inla(formula = inla.mdata(cbind(bites,low,high)) ~ factor(station) + f(event_ID, constr=T, model='iid'),
-                     family="cenpoisson2",verbose=F,
-                     data= dat, control.fixed = list(prec.intercept=1e-1),
-                     control.compute = list(config=T),
-                     control.mode = list(result=mod2, restart=T))
-              },
-              error=function(cond)
-              {
-                return(NULL)
-              },
-              finally={
+        mod12 <-
+          tryCatch(
+            {
+              inla(formula = inla.mdata(cbind(bites,low,high)) ~ factor(station) + f(event_ID, constr=T, model='iid'),
+                   family="cenpoisson2",verbose=F,
+                   data= dat, control.fixed = list(prec.intercept=1e-1),
+                   control.compute = list(config=T),
+                   control.mode = list(result=mod2, restart=T))
+            },
+            error=function(cond)
+            {
+              return(NULL)
+            },
+            finally={
 
-              }
-            )
-          if(sum(is.na(mod12$summary.fixed$mean))>0 | mod12$misc$mode.status!=0 )
-          {
-            mod12 <- NULL
-          }
+            }
+          )
+        if(sum(is.na(mod12$summary.fixed$mean))>0 | sum(mod12$misc$mode.status!=0)>0 )
+        {
+          mod12 <- NULL
+        }
 
-          if(!is.null(mod12))
-          {
-            Results[results_mapper(nsim,i,j,k,'censored'),'Converge'] <- 1
+        if(!is.null(mod12))
+        {
+          Results[results_mapper(nsim,i,j,k,'censored'),'Converge'] <- 1
 
-            parameters <- inla.posterior.sample(5000,mod12,
-                                                selection = list(`(Intercept)` = 0,
-                                                                 `factor(station)2` = 0,`factor(station)3` = 0,
-                                                                 `factor(station)4` = 0,`factor(station)5` = 0,
-                                                                 `factor(station)6` = 0))
-            parameters <- inla.posterior.sample.eval(fun=function(...){
-              c(exp(`(Intercept)`), exp(`factor(station)2`),
-                exp(`factor(station)3`), exp(`factor(station)4`),
-                exp(`factor(station)5`), exp(`factor(station)6`),
-                exp(`(Intercept)`+`factor(station)2`), exp(`(Intercept)`+`factor(station)3`),
-                exp(`(Intercept)`+`factor(station)4`), exp(`(Intercept)`+`factor(station)5`),
-                exp(`(Intercept)`+`factor(station)6`))}, parameters)
-            parameters <- t(apply(parameters, 1, FUN=function(x){
-              return(quantile(x,probs=c(0.025,0.5,0.975)))
-            }))
-            colnames(parameters)=c('LCL', 'Median','UCL')
+          parameters <- inla.posterior.sample(2000,mod12,
+                                              selection = list(`(Intercept)` = 0,
+                                                               `factor(station)2` = 0,`factor(station)3` = 0,
+                                                               `factor(station)4` = 0,`factor(station)5` = 0,
+                                                               `factor(station)6` = 0))
+          parameters <- inla.posterior.sample.eval(fun=function(...){
+            c(exp(`(Intercept)`), exp(`factor(station)2`),
+              exp(`factor(station)3`), exp(`factor(station)4`),
+              exp(`factor(station)5`), exp(`factor(station)6`),
+              exp(`(Intercept)`+`factor(station)2`), exp(`(Intercept)`+`factor(station)3`),
+              exp(`(Intercept)`+`factor(station)4`), exp(`(Intercept)`+`factor(station)5`),
+              exp(`(Intercept)`+`factor(station)6`))}, parameters)
+          parameters <- t(apply(parameters, 1, FUN=function(x){
+            return(quantile(x,probs=c(0.025,0.5,0.975)))
+          }))
+          colnames(parameters)=c('LCL', 'Median','UCL')
 
-            Results[results_mapper(nsim,i,j,k,'censored'),'Rel_Bias'][-1] <-
-              parameters[2:6,2] -
-              mean_bite[-1,3]/mean_bite[1,3]
+          Results[results_mapper(nsim,i,j,k,'censored'),'Rel_Bias'][-1] <-
+            parameters[2:6,2] -
+            mean_bite[-1,3]/mean_bite[1,3]
 
-            Results[results_mapper(nsim,i,j,k,'censored'),'Rel_RMSE'][-1] <-
-              (parameters[2:6,2] -
-                 mean_bite[-1,3]/mean_bite[1,3])^2
+          Results[results_mapper(nsim,i,j,k,'censored'),'Rel_RMSE'][-1] <-
+            (parameters[2:6,2] -
+               mean_bite[-1,3]/mean_bite[1,3])^2
 
-            Results[results_mapper(nsim,i,j,k,'censored'),'Rel_Coverage'][-1] <-
-              ifelse(parameters[2:6,1] <= mean_bite[-1,3]/mean_bite[1,3] & parameters[2:6,3] >= mean_bite[-1,3]/mean_bite[1,3],
-                     1,0)
-            Results[results_mapper(nsim,i,j,k,'censored'),'Bias'] <-
-              parameters[c(1,7:11),2] - mean_bite_gen[,3]
-            Results[results_mapper(nsim,i,j,k,'censored'),'RMSE'] <-
-              (parameters[c(1,7:11),2] - mean_bite_gen[,3])^2
-            Results[results_mapper(nsim,i,j,k,'censored'),'Coverage'] <-
-              ifelse(parameters[c(1,7:11),1] <= mean_bite[,3] & parameters[c(1,7:11),3] >= mean_bite[,3],
-                     1,0)
-          }
+          Results[results_mapper(nsim,i,j,k,'censored'),'Rel_Coverage'][-1] <-
+            ifelse(parameters[2:6,1] <= mean_bite[-1,3]/mean_bite[1,3] & parameters[2:6,3] >= mean_bite[-1,3]/mean_bite[1,3],
+                   1,0)
+          Results[results_mapper(nsim,i,j,k,'censored'),'Bias'] <-
+            parameters[c(1,7:11),2] - mean_bite_gen[,3]
+          Results[results_mapper(nsim,i,j,k,'censored'),'RMSE'] <-
+            (parameters[c(1,7:11),2] - mean_bite_gen[,3])^2
+          Results[results_mapper(nsim,i,j,k,'censored'),'Coverage'] <-
+            ifelse(parameters[c(1,7:11),1] <= mean_bite[,3] & parameters[c(1,7:11),3] >= mean_bite[,3],
+                   1,0)
+        }
 
-          print(Results[results_mapper(nsim,i,j,k,'naive'),])
-          print(Results[results_mapper(nsim,i,j,k,'adjust'),])
-          print(Results[results_mapper(nsim,i,j,k,'censored_upper85'),])
-          print(Results[results_mapper(nsim,i,j,k,'censored_upper85_cprop1'),])
-          print(Results[results_mapper(nsim,i,j,k,'censored_cprop1'),])
-          print(Results[results_mapper(nsim,i,j,k,'censored'),])
-          rm(mod6,mod8,mod10,mod12)
+        print(Results[results_mapper(nsim,i,j,k,'naive'),])
+        print(Results[results_mapper(nsim,i,j,k,'adjust'),])
+        print(Results[results_mapper(nsim,i,j,k,'censored_upper85'),])
+        print(Results[results_mapper(nsim,i,j,k,'censored_upper85_cprop1'),])
+        print(Results[results_mapper(nsim,i,j,k,'censored_cprop1'),])
+        print(Results[results_mapper(nsim,i,j,k,'censored'),])
+        rm(mod6,mod8,mod10,mod12)
 
         #}
 
@@ -981,7 +981,7 @@ multiplot(
                    low = 'low positive correlation',
                    medium = 'med positive correlation',
                    high = 'high positive correlation'
-                   ),
+                 ),
                  mean_attract = c(
                    constant = 'constant target species \nabundance',
                    linear = 'linearly increasing target \nspecies abundance '
@@ -1565,8 +1565,8 @@ multiplot(
                    high = 'saturation "common"'
                  )
                )) +
-      ylab('Convergence Proportion') +
-      ggtitle('Proportion of 100 Simulations That Converged vs Method') +
+    ylab('Convergence Proportion') +
+    ggtitle('Proportion of 100 Simulations That Converged vs Method') +
     xlab('Estimator') + guides(fill='none') +
     scale_fill_brewer(palette = 'Pastel1') +
     # theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
@@ -1578,7 +1578,7 @@ multiplot(
     scale_x_discrete(labels=c("censored" = "Censored", "censored_cprop1" = "Censored qMax",
                               "censored_upper85_cprop1" = "Censored q95","censored_upper85" = "Censored q85 \n'Censored Adj'")) +
     guides(color='none', model='none', shape='none'),
-    cols=1)
+  cols=1)
 ## Repeat, but this time average over all settings
 multiplot(
   Results %>%
@@ -1803,8 +1803,8 @@ Results %>%
   ungroup() %>%
   group_by(model) %>%
   summarise(sum(Best))
-  # summarise(mean(Result), mean(Result)-2*sd(Result),
-  #           mean(Result)+2*sd(Result))
+# summarise(mean(Result), mean(Result)-2*sd(Result),
+#           mean(Result)+2*sd(Result))
 
 # 11/16 settings favoured by censored approaches, 5/11 favoured by CPUE-based.
 # Note that the ICR-based estimator never wins
@@ -2352,5 +2352,4 @@ Results %>%
 #   geom_point(position = position_dodge(width=0.3)) +
 #   facet_grid(correlation ~sat_level) +
 #   ylab('Convergence Proportion')
-
 
