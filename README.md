@@ -15,4 +15,8 @@ To use the package on custom data, bypass the `read_Data_hookcomp()` step and en
 - `year` the year of the fishing event
 - `region_INLA` the region where the fishing event took place. An index (numeric variable) matching the corresponding row in `survey_boundaries`
 - `station` containing the index of the fishing station where the fishing event took place. Useful if the same locations are visited each year (for multiple years)
-- `twentyhooks` a bindary variable indicating years where a different number of hooks were used. Useful if 2 fishing protocols are used and differences want to be controlled for. Set to 0 if not relevant.
+- `twentyhooks` a binary variable indicating years where a different number of hooks were used. Useful if 2 fishing protocols are used and differences want to be controlled for. Set to 0 if not relevant.
+
+## Simulation Study
+
+The simulation study accompanying the paper can be found in the folder 'Simulation Study'
