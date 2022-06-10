@@ -53,7 +53,7 @@ sat_fun <- function(sat_effect, sat_level, hook_sat_level=0.85)
   return(val)
 }
 
-# try the hook competition adjusted method
+# try the hook competition ICR method
 comp_factor_fun <- function(prop_hook, n_hook)
 {
   prop <- prop_hook
@@ -69,7 +69,7 @@ comp_factor_fun <- function(prop_hook, n_hook)
 #      type = 'l', main='bite rate functions', ylab='bite rate',xlab='time')
 # lines(x=seq(from=0, to=5, length.out=100),y=rep(0.2, times=100), col='red')
 
-# sample the unadjusted bite times for each of the 'attracted' fish for each fishing event
+# sample the unICR bite times for each of the 'attracted' fish for each fishing event
 bite_samp <- function(bite_fun, n)
 {
   if(bite_fun=='exp_decay')
@@ -129,7 +129,7 @@ Results <- data.frame(
   correlation = rep(rep(c('negative','low','medium','high'),times=n_sim*2*2), each=6*nstation),
   #sat_effects = rep(rep(c('no saturation','saturation'),times=n_sim*2*2), each=2*4*nstation),
   #bite_fun = rep(rep(c('constant','mixed'), times=n_sim*2*2*2), each=4*nstation),
-  model=rep(rep(c('naive','adjust','censored_upper85','censored','censored_upper85_cprop1','censored_cprop1'), times=n_sim*2*2*4), each=nstation),
+  model=rep(rep(c('CPUE','adjust','censored_upper85','censored','censored_upper85_cprop1','censored_cprop1'), times=n_sim*2*2*4), each=nstation),
   Bias=rep(0, times=n_sim*2*2*4*6*nstation),
   Converge=rep(0, times=n_sim*2*2*4*6*nstation),
   RMSE=rep(0, times=n_sim*2*2*4*6*nstation),
@@ -162,7 +162,7 @@ for(nsim in 1:n_sim)
       {
         # NOTE THAT WE NOW SCALE THE MEAN OF THE TARGET SPECIES BY THE EXPONENTIAL OF THE
         # LOG-NORMAL VARIANCE TO ENSURE THE SAME MEAN FROM THE PREVIOUS EXPERIMENT
-        # DOESN'T AFFECT RELATIVE ABUNDANCE!!
+        # DOESN'T AFFECT relative abundance!!
         if(mean_attract[j] == 'constant')
         {
           mean_bite_gen =
@@ -234,7 +234,7 @@ for(nsim in 1:n_sim)
                 bite_samp(bite_funs[3],sum(bite_time_3>soak_time))
             }
 
-            # Now we sample the first n_hooks*n_hook_sat_level unadjusted
+            # Now we sample the first n_hooks*n_hook_sat_level unICR
             if((length(bite_time_1) + length(bite_time_2) + length(bite_time_3)) <= n_hooks*hook_sat_level)
             {
               nbite$bites[nbite$species==1 &
@@ -250,7 +250,7 @@ for(nsim in 1:n_sim)
             if((length(bite_time_1) + length(bite_time_2) + length(bite_time_3)) > n_hooks*hook_sat_level)
             {
               species_ind <- c(rep(1, length(bite_time_1)),rep(2,length(bite_time_2)),rep(3,length(bite_time_3)))
-              # Now we sample the first n_hooks*n_hook_sat_level unadjusted
+              # Now we sample the first n_hooks*n_hook_sat_level unICR
               all_times <- c(bite_time_1,bite_time_2,bite_time_3)
               time_ind <- sort.int(all_times, index.return = T, decreasing = F)$ix
               # for the remaining hooks we sample/thin according to the sat_fun
@@ -329,10 +329,10 @@ for(nsim in 1:n_sim)
         # ggplot(nbite[nbite$species!=2,], aes(x=prop_sat, y=composition, group=factor(species), colour=factor(species))) +
         #   geom_point() + geom_smooth() + facet_wrap(~factor(station))
 
-        Results[results_mapper(nsim,i,j,k,'naive'),'Prop_Sat_85'] <- as.numeric(by(nbite, nbite$station, FUN=function(x){mean(x$prop_sat>cprop)}))
+        Results[results_mapper(nsim,i,j,k,'CPUE'),'Prop_Sat_85'] <- as.numeric(by(nbite, nbite$station, FUN=function(x){mean(x$prop_sat>cprop)}))
         Results[results_mapper(nsim,i,j,k,'adjust'),'Prop_Sat_85'] <- as.numeric(by(nbite, nbite$station, FUN=function(x){mean(x$prop_sat>cprop)}))
         Results[results_mapper(nsim,i,j,k,'censored_upper85'),'Prop_Sat_85'] <- as.numeric(by(nbite, nbite$station, FUN=function(x){mean(x$prop_sat>cprop)}))
-        Results[results_mapper(nsim,i,j,k,'naive'),'Prop_Sat_100'] <- as.numeric(by(nbite, nbite$station, FUN=function(x){mean(x$prop_sat==1)}))
+        Results[results_mapper(nsim,i,j,k,'CPUE'),'Prop_Sat_100'] <- as.numeric(by(nbite, nbite$station, FUN=function(x){mean(x$prop_sat==1)}))
         Results[results_mapper(nsim,i,j,k,'adjust'),'Prop_Sat_100'] <- as.numeric(by(nbite, nbite$station, FUN=function(x){mean(x$prop_sat==1)}))
         Results[results_mapper(nsim,i,j,k,'censored_upper85'),'Prop_Sat_100'] <- as.numeric(by(nbite, nbite$station, FUN=function(x){mean(x$prop_sat==1)}))
         Results[results_mapper(nsim,i,j,k,'censored_upper85_cprop1'),'Prop_Sat_100'] <- as.numeric(by(nbite, nbite$station, FUN=function(x){mean(x$prop_sat==1)}))
@@ -342,7 +342,7 @@ for(nsim in 1:n_sim)
         Results[results_mapper(nsim,i,j,k,'censored'),'Prop_Sat_100'] <- as.numeric(by(nbite, nbite$station, FUN=function(x){mean(x$prop_sat==1)}))
         Results[results_mapper(nsim,i,j,k,'censored'),'Prop_Sat_85'] <- as.numeric(by(nbite, nbite$station, FUN=function(x){mean(x$prop_sat>cprop)}))
 
-        # fit a naive model that ignores competition
+        # fit a CPUE model that ignores competition
         dat <- nbite[nbite$species == 3,]
         dat$event_ID <- 1:dim(dat)[1]
 
@@ -368,7 +368,7 @@ for(nsim in 1:n_sim)
 
         if(!is.null(mod2))
         {
-          Results[results_mapper(nsim,i,j,k,'naive'),'Converge'] <- 1
+          Results[results_mapper(nsim,i,j,k,'CPUE'),'Converge'] <- 1
 
           parameters <- inla.posterior.sample(2000,mod2,
                                               selection = list(`(Intercept)` = 0,
@@ -387,23 +387,23 @@ for(nsim in 1:n_sim)
           }))
           colnames(parameters)=c('LCL', 'Median','UCL')
 
-          Results[results_mapper(nsim,i,j,k,'naive'),'Rel_Bias'][-1] <-
+          Results[results_mapper(nsim,i,j,k,'CPUE'),'Rel_Bias'][-1] <-
             parameters[2:6,2] -
             mean_bite[-1,3]/mean_bite[1,3]
 
-          Results[results_mapper(nsim,i,j,k,'naive'),'Rel_RMSE'][-1] <-
+          Results[results_mapper(nsim,i,j,k,'CPUE'),'Rel_RMSE'][-1] <-
             (parameters[2:6,2] -
                mean_bite[-1,3]/mean_bite[1,3])^2
 
-          Results[results_mapper(nsim,i,j,k,'naive'),'Rel_Coverage'][-1] <-
+          Results[results_mapper(nsim,i,j,k,'CPUE'),'Rel_Coverage'][-1] <-
             ifelse(parameters[2:6,1] <= mean_bite[-1,3]/mean_bite[1,3] & parameters[2:6,3] >= mean_bite[-1,3]/mean_bite[1,3],
                    1,0)
           # Compare Medians! Median value equals mean_bite_gen by definition of conditional medians
-          Results[results_mapper(nsim,i,j,k,'naive'),'Bias'] <-
+          Results[results_mapper(nsim,i,j,k,'CPUE'),'Bias'] <-
             parameters[c(1,7:11),2] - mean_bite_gen[,3]
-          Results[results_mapper(nsim,i,j,k,'naive'),'RMSE'] <-
+          Results[results_mapper(nsim,i,j,k,'CPUE'),'RMSE'] <-
             (parameters[c(1,7:11),2] - mean_bite_gen[,3])^2
-          Results[results_mapper(nsim,i,j,k,'naive'),'Coverage'] <-
+          Results[results_mapper(nsim,i,j,k,'CPUE'),'Coverage'] <-
             ifelse(parameters[c(1,7:11),1] <= mean_bite[,3] & parameters[c(1,7:11),3] >= mean_bite[,3],
                    1,0)
         }
@@ -412,7 +412,7 @@ for(nsim in 1:n_sim)
         #   geom_errorbar() +
         #   geom_line(data = data.frame(x2=2:nstation, y2=mean_bite[-1,3]/mean_bite[1,3], UCL=0, LCL=0), aes(x=x2,y=y2), colour='red') +
         #   xlab('Station') +
-        #   ylab('Relative Abundance') + ggtitle('The true relative abundance shown in red')
+        #   ylab('relative abundance') + ggtitle('The true relative abundance shown in red')
 
         dat$bites <- round(dat$bites*comp_factor_fun(1-dat$prop_sat, rep(n_hooks,length(dat$prop_sat))))
 
@@ -420,7 +420,7 @@ for(nsim in 1:n_sim)
         #   geom_errorbar() +
         #   geom_line(data = data.frame(x2=1:nstation, y2=mean_bite[,3], UCL=0, LCL=0), aes(x=x2,y=y2), colour='red') +
         #   xlab('Station') +
-        #   ylab('Adjusted Station Abundance') + ggtitle('The true abundance shown in red')
+        #   ylab('ICR Station Abundance') + ggtitle('The true abundance shown in red')
 
         mod4 <-
           tryCatch(
@@ -489,7 +489,7 @@ for(nsim in 1:n_sim)
         #   geom_errorbar() +
         #   geom_line(data = data.frame(x2=2:nstation, y2=mean_bite[-1,3]/mean_bite[1,3], UCL=0, LCL=0), aes(x=x2,y=y2), colour='red') +
         #   xlab('Station') +
-        #   ylab('Adjusted Relative Abundance') + ggtitle('The true relative abundance shown in red')
+        #   ylab('ICR relative abundance') + ggtitle('The true relative abundance shown in red')
 
         # censorship interval
         upper_bound <- rep(0, length(nbite[nbite$species==3,]$prop_sat))
@@ -879,7 +879,7 @@ for(nsim in 1:n_sim)
                    1,0)
         }
 
-        print(Results[results_mapper(nsim,i,j,k,'naive'),])
+        print(Results[results_mapper(nsim,i,j,k,'CPUE'),])
         print(Results[results_mapper(nsim,i,j,k,'adjust'),])
         print(Results[results_mapper(nsim,i,j,k,'censored_upper85'),])
         print(Results[results_mapper(nsim,i,j,k,'censored_upper85_cprop1'),])
@@ -895,26 +895,27 @@ for(nsim in 1:n_sim)
 }
 
 #saveRDS(Results, 'Simulation_Results_Correlated_Corrected_Aggressive.rds')
-#Results <- readRDS('./Simulation Study/RDS_Files/Simulation_Results_Correlated_Corrected_Aggressive.rds')
+Results <- readRDS('./Simulation Study/RDS_Files/Simulation_Results_Correlated_Corrected_Aggressive.rds')
 
-# Create artificial 'relative abundance' of target and aggressive species plots
+library(inlabru)
+# Create artificial 'relative abundance' of target and slow species plots
 rel_abund_dat <- data.frame(expand.grid(
-  species=c('target','aggressive'),
+  species=c('target species','slow species'),
   sat_level=factor(c('low','high'), levels=c('low','high'), ordered = T),
   mean_attract=factor(c('constant','linear')),
   Year=c(1,2,3,4,5,6)))
 rel_abund_dat$Abundance <- 1
-rel_abund_dat$Abundance[rel_abund_dat$species=='target'&
+rel_abund_dat$Abundance[rel_abund_dat$species=='target species'&
                           rel_abund_dat$mean_attract=='linear'] <-
-  rel_abund_dat$Year[rel_abund_dat$species=='target'&
+  rel_abund_dat$Year[rel_abund_dat$species=='target species'&
                        rel_abund_dat$mean_attract=='linear']
-rel_abund_dat$Abundance[rel_abund_dat$species=='aggressive'&
+rel_abund_dat$Abundance[rel_abund_dat$species=='slow species'&
                           rel_abund_dat$sat_level=='low'] <-
-  (c(120,140, 160, 180, 200, 280)/120)[rel_abund_dat$Year[rel_abund_dat$species=='aggressive'&
+  (c(120,140, 160, 180, 200, 280)/120)[rel_abund_dat$Year[rel_abund_dat$species=='slow species'&
                                                             rel_abund_dat$sat_level=='low']]
-rel_abund_dat$Abundance[rel_abund_dat$species=='aggressive'&
+rel_abund_dat$Abundance[rel_abund_dat$species=='slow species'&
                           rel_abund_dat$sat_level=='high'] <-
-  2*(c(120,140, 160, 180, 200, 280)/120)[rel_abund_dat$Year[rel_abund_dat$species=='aggressive'&
+  2*(c(120,140, 160, 180, 200, 280)/120)[rel_abund_dat$Year[rel_abund_dat$species=='slow species'&
                                                               rel_abund_dat$sat_level=='high']]
 
 rel_abund_plot <-
@@ -925,6 +926,7 @@ rel_abund_plot <-
             xmin = -Inf,xmax = Inf,
             ymin = -Inf,ymax = Inf,alpha = 0.3) +
   geom_line() +
+  scale_fill_discrete(labels=c('Target Species', 'Slow Species')) +
   facet_grid(mean_attract+sat_level~.,
              labeller = labeller(
                mean_attract = c(
@@ -941,25 +943,28 @@ rel_abund_plot <-
         panel.background = element_blank(), axis.line = element_blank()) +
   guides(fill='none') +
   theme(strip.background = element_blank(),strip.text = element_blank(),
-        legend.position = c(0.45,0.94),legend.box.background=element_blank(),
+        legend.position = c(0.43,0.94),legend.box.background=element_blank(),
         legend.background=element_blank(),
         axis.title.y = element_blank()) +
-  guides(linetype=guide_legend('Species Rel. Abundance'))
+  guides(linetype=guide_legend('')) +
+  ylim(c(0,6))
 
 # Change the factors to ordered factors to improve plotting
 Results$sat_level <- factor(Results$sat_level, levels=c('low','high'), ordered = T)
 Results$mean_attract <- factor(Results$mean_attract, levels=c('constant','linear'), ordered = T)
 Results$correlation <- factor(Results$correlation, levels=c('negative','low','medium','high'), ordered = T)
-Results$model <- factor(Results$model, levels=c('naive','adjust','censored','censored_cprop1','censored_upper85_cprop1','censored_upper85'), ordered = T)
+Results$model <- factor(Results$model, levels=c('CPUE','adjust','censored','censored_cprop1','censored_upper85_cprop1','censored_upper85'), ordered = T)
 
-# THESE ARE DESIGNED FOR A4 LANDSCAPE
+# THESE ARE DESIGNED FOR 5.83x11.3
 # NOTICE THE HACK IN MULTIPLOT'S LAYOUT ARGUMENT
 multiplot(
+  rel_abund_plot + ggtitle('Simulated abundance'),
   Results %>%
+    filter(!(model %in% c('censored'))) %>%
     group_by(sat_level, mean_attract, correlation, nsim) %>%
     mutate(all_converged = mean(Converge)) %>%
     ungroup() %>%
-    filter(Station>1, all_converged==1, !(model %in% c('censored_upper85_cprop1','censored_cprop1')) ) %>%
+    filter(Station>1, all_converged==1) %>%
     group_by(model, Station, correlation, sat_level,  mean_attract) %>%
     mutate(Mean = median(Rel_Bias),
            UCL = median(Rel_Bias)+(2/sqrt(length(Rel_Bias)))*mad(Rel_Bias),
@@ -972,8 +977,8 @@ multiplot(
               aes(x=Station, y=Mean, ymin=LCL, ymax=UCL, colour=model, group=model, fill = mean_attract),
               xmin = -Inf,xmax = Inf,
               ymin = -Inf,ymax = Inf,alpha = 0.3) +
-    geom_errorbar(position = position_dodge(width=0.8)) +
-    geom_point(position = position_dodge(width=0.8), size=2) +
+    #geom_errorbar(position = position_dodge(width=0.9)) +
+    geom_point(position = position_dodge(width=0.9), size=2) +
     facet_grid(mean_attract + sat_level ~ correlation , scales = 'free_y',
                labeller = labeller(
                  correlation=c(
@@ -992,27 +997,28 @@ multiplot(
                  )
                )) +
     geom_hline(yintercept=0) +
-    ggtitle('Bias in Relative Abundance Indices vs Method',
-            subtitle = 'Rows are trends in relative abundance of target species and the average degree of hook saturation,\nColumns are correlation of target species\' abundance with saturation events') +
-    ylab('Bias in Relative Abundance Index') +
+    ggtitle('Bias in relative abundance for each method')+#,
+            #subtitle = 'Rows are trends in relative abundance of target species and the average degree of hook saturation. Columns are correlation \nof target species\' abundance with saturation events. 95% Confidence intervals smaller than plotting shapes so omitted.') +
+    ylab('Bias') +
     xlab('Year') + guides(fill='none') +
     scale_fill_brewer(palette = 'Pastel1') +
     theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
           panel.background = element_blank(), axis.line = element_blank(),
-          legend.position = 'right') +
-    scale_color_viridis_d(labels=c('Naive','Adjusted','Censored','Censored Adj')) +
-    scale_shape_manual(labels=c('Naive','Adjusted','Censored','Censored Adj'),
-                       values=c('circle','triangle','square','square')) +
-    guides(color=guide_legend(override.aes=list(fill=NA))),
-  rel_abund_plot,
-  layout = matrix(c(rep(1,2000),rep(NA,55), rep(2,445)), nrow = 500, ncol = 5, byrow = F))
+          legend.position = 'left', strip.text.y = element_blank()) +
+    scale_color_viridis_d(labels=c('CPUE','ICR','Censored 1','Censored 1 Q','Censored 0.95 Q')) +
+    scale_shape_manual(labels=c('CPUE','ICR','Censored 1','Censored 1 Q','Censored 0.95 Q'),
+                       values=c('circle','triangle','cross','plus','square')) +
+    guides(color=guide_legend(override.aes=list(fill=NA)))+ labs(colour='Method', shape='Method'),
+  layout = matrix(c(rep(NA,32),rep(1,468),rep(2,2000)), nrow = 500, ncol = 5, byrow = F))
 
 multiplot(
+  rel_abund_plot + ggtitle('Simulated abundance'),
   Results %>%
+    filter(!(model %in% c('censored'))) %>%
     group_by(sat_level, mean_attract, correlation, nsim) %>%
     mutate(all_converged = mean(Converge)) %>%
     ungroup() %>%
-    filter(Station>1, all_converged==1, !(model %in% c('censored_upper85_cprop1','censored_cprop1')) ) %>%
+    filter(Station>1, all_converged==1) %>%
     group_by(model, Station, correlation, sat_level,  mean_attract) %>%
     mutate(Mean = median(Rel_Bias),
            UCL = quantile(Rel_Bias, probs=0.975),
@@ -1025,8 +1031,8 @@ multiplot(
               aes(x=Station, y=Mean, ymin=LCL, ymax=UCL, colour=model, group=model, fill = mean_attract),
               xmin = -Inf,xmax = Inf,
               ymin = -Inf,ymax = Inf,alpha = 0.3) +
-    geom_errorbar(position = position_dodge(width=0.8)) +
-    geom_point(position = position_dodge(width=0.8), size=2) +
+    #geom_errorbar(position = position_dodge(width=0.9)) +
+    geom_point(position = position_dodge(width=0.9), size=2) +
     facet_grid(mean_attract + sat_level ~ correlation , scales = 'free_y',
                labeller = labeller(
                  correlation=c(
@@ -1045,32 +1051,32 @@ multiplot(
                  )
                )) +
     geom_hline(yintercept=0) +
-    ggtitle('Bias in Relative Abundance Indices vs Method',
-            subtitle = 'Rows are trends in relative abundance of target species and the average degree of hook saturation,\nColumns are correlation of target species\' abundance with saturation events') +
-    ylab('Bias in Relative Abundance Index') +
+    ggtitle('Bias in relative abundance for each method')+#,
+            #subtitle = 'Rows are trends in relative abundance of target species and the average degree of hook saturation. Columns are correlation \nof target species\' abundance with saturation events. 95% Confidence intervals smaller than plotting shapes so omitted.') +
+    ylab('Bias') +
     xlab('Year') + guides(fill='none') +
     scale_fill_brewer(palette = 'Pastel1') +
     theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
           panel.background = element_blank(), axis.line = element_blank(),
-          legend.position = 'right') +
-    scale_color_viridis_d(labels=c('Naive','Adjusted','Censored','Censored Adj')) +
-    scale_shape_manual(labels=c('Naive','Adjusted','Censored','Censored Adj'),
-                       values=c('circle','triangle','square','square')) +
-    guides(color=guide_legend(override.aes=list(fill=NA))),
-  rel_abund_plot,
-  layout = matrix(c(rep(1,2000),rep(NA,55), rep(2,445)), nrow = 500, ncol = 5, byrow = F))
-
+          legend.position = 'left', strip.text.y = element_blank()) +
+    scale_color_viridis_d(labels=c('CPUE','ICR','Censored 1','Censored 1 Q','Censored 0.95 Q')) +
+    scale_shape_manual(labels=c('CPUE','ICR','Censored 1','Censored 1 Q','Censored 0.95 Q'),
+                       values=c('circle','triangle','cross','plus','square')) +
+    guides(color=guide_legend(override.aes=list(fill=NA)))+ labs(colour='Method', shape='Method'),
+  layout = matrix(c(rep(NA,32),rep(1,468),rep(2,2000)), nrow = 500, ncol = 5, byrow = F))
 
 multiplot(
+  rel_abund_plot + ggtitle('Simulated abundance'),
   Results %>%
+    filter(!(model %in% c('censored','adjust'))) %>%
     group_by(sat_level, mean_attract, correlation, nsim) %>%
     mutate(all_converged = mean(Converge)) %>%
     ungroup() %>%
-    filter(Station>1, all_converged==1, !(model %in% c('censored_upper85_cprop1','censored_cprop1')) ) %>%
+    filter(Station>1, all_converged==1) %>%
     group_by(model, Station, correlation, sat_level,  mean_attract) %>%
-    mutate(Mean = median(Rel_RMSE),
-           UCL = median(Rel_RMSE)+(2/sqrt(length(Rel_RMSE)))*mad(Rel_RMSE),
-           LCL = median(Rel_RMSE)-(2/sqrt(length(Rel_RMSE)))*mad(Rel_RMSE)) %>%
+    mutate(Mean = median(Rel_Bias),
+           UCL = median(Rel_Bias)+(2/sqrt(length(Rel_Bias)))*mad(Rel_Bias),
+           LCL = median(Rel_Bias)-(2/sqrt(length(Rel_Bias)))*mad(Rel_Bias)) %>%
     ungroup(Station) %>%
     mutate(random_samp = c(T, rep(F, length(Rel_Bias)-1))) %>%
     group_by(Station) %>%
@@ -1079,8 +1085,8 @@ multiplot(
               aes(x=Station, y=Mean, ymin=LCL, ymax=UCL, colour=model, group=model, fill = mean_attract),
               xmin = -Inf,xmax = Inf,
               ymin = -Inf,ymax = Inf,alpha = 0.3) +
-    geom_errorbar(position = position_dodge(width=0.8)) +
-    geom_point(position = position_dodge(width=0.8), size=2) +
+    #geom_errorbar(position = position_dodge(width=0.9)) +
+    geom_point(position = position_dodge(width=0.9), size=2) +
     facet_grid(mean_attract + sat_level ~ correlation , scales = 'free_y',
                labeller = labeller(
                  correlation=c(
@@ -1099,80 +1105,28 @@ multiplot(
                  )
                )) +
     geom_hline(yintercept=0) +
-    ggtitle('MSE in Relative Abundance Indices vs Method',
-            subtitle = 'Rows are trends in relative abundance of target species and the average degree of hook saturation,\nColumns are correlation of target species\' abundance with saturation events') +
-    ylab('MSE in Relative Abundance Index') +
+    ggtitle('Bias in relative abundance for each method')+#,
+            #subtitle = 'Rows are trends in relative abundance of target species and the average degree of hook saturation. Columns are correlation \nof target species\' abundance with saturation events. 95% Confidence intervals smaller than plotting shapes so omitted.') +
+    ylab('Bias') +
     xlab('Year') + guides(fill='none') +
     scale_fill_brewer(palette = 'Pastel1') +
     theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
           panel.background = element_blank(), axis.line = element_blank(),
-          legend.position = 'right') +
-    scale_color_viridis_d(labels=c('Naive','Adjusted','Censored','Censored Adj')) +
-    scale_shape_manual(labels=c('Naive','Adjusted','Censored','Censored Adj'),
-                       values=c('circle','triangle','square','square')) +
-    guides(color=guide_legend(override.aes=list(fill=NA))),
-  rel_abund_plot,
-  layout = matrix(c(rep(1,2000),rep(NA,55), rep(2,445)), nrow = 500, ncol = 5, byrow = F))
+          legend.position = 'left', strip.text.y = element_blank()) +
+    scale_color_viridis_d(labels=c('CPUE','Censored 1','Censored 1 Q','Censored 0.95 Q')) +
+    scale_shape_manual(labels=c('CPUE','Censored 1','Censored 1 Q','Censored 0.95 Q'),
+                       values=c('circle','cross','plus','square')) +
+    guides(color=guide_legend(override.aes=list(fill=NA)))+ labs(colour='Method', shape='Method'),
+  layout = matrix(c(rep(NA,32),rep(1,468),rep(2,2000)), nrow = 500, ncol = 5, byrow = F))
 
 multiplot(
+  rel_abund_plot + ggtitle('Simulated abundance'),
   Results %>%
+    filter(!(model %in% c('censored'))) %>%
     group_by(sat_level, mean_attract, correlation, nsim) %>%
     mutate(all_converged = mean(Converge)) %>%
     ungroup() %>%
-    filter(Station>1, all_converged==1, !(model %in% c('adjust','censored_upper85_cprop1','censored_cprop1')) ) %>%
-    group_by(model, Station, correlation, sat_level,  mean_attract) %>%
-    mutate(Mean = median(Rel_RMSE),
-           UCL = median(Rel_RMSE)+(2/sqrt(length(Rel_RMSE)))*mad(Rel_RMSE),
-           LCL = median(Rel_RMSE)-(2/sqrt(length(Rel_RMSE)))*mad(Rel_RMSE)) %>%
-    ungroup(Station) %>%
-    mutate(random_samp = c(T, rep(F, length(Rel_Bias)-1))) %>%
-    group_by(Station) %>%
-    ggplot(aes(x=Station, y=Mean, ymin=LCL, ymax=UCL, colour=model, group=model, shape=model)) +
-    geom_rect(data= ~.x[.x$random_samp==T,],
-              aes(x=Station, y=Mean, ymin=LCL, ymax=UCL, colour=model, group=model, fill = mean_attract),
-              xmin = -Inf,xmax = Inf,
-              ymin = -Inf,ymax = Inf,alpha = 0.3) +
-    geom_errorbar(position = position_dodge(width=0.8)) +
-    geom_point(position = position_dodge(width=0.8), size=2) +
-    facet_grid(mean_attract + sat_level ~ correlation , scales = 'free_y',
-               labeller = labeller(
-                 correlation=c(
-                   negative = 'negative correlation',
-                   low = 'low positive correlation',
-                   medium = 'med positive correlation',
-                   high = 'high positive correlation'
-                 ),
-                 mean_attract = c(
-                   constant = 'constant target species \nabundance',
-                   linear = 'linearly increasing target \nspecies abundance '
-                 ),
-                 sat_level = c(
-                   low = 'saturation less "common"',
-                   high = 'saturation "common"'
-                 )
-               )) +
-    geom_hline(yintercept=0) +
-    ggtitle('MSE in Relative Abundance Indices vs Method',
-            subtitle = 'Rows are trends in relative abundance of target species and the average degree of hook saturation,\nColumns are correlation of target species\' abundance with saturation events') +
-    ylab('MSE in Relative Abundance Index') +
-    xlab('Year') + guides(fill='none') +
-    scale_fill_brewer(palette = 'Pastel1') +
-    theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
-          panel.background = element_blank(), axis.line = element_blank(),
-          legend.position = 'right') +
-    scale_color_viridis_d(labels=c('Naive','Censored','Censored Adj')) +
-    scale_shape_manual(labels=c('Naive','Censored','Censored Adj'),
-                       values=c('triangle','square','square')) +
-    guides(color=guide_legend(override.aes=list(fill=NA))),
-  rel_abund_plot,
-  layout = matrix(c(rep(1,2000),rep(NA,55), rep(2,445)), nrow = 500, ncol = 5, byrow = F))
-
-multiplot(
-  Results %>%
-    group_by(sat_level, mean_attract, correlation, nsim) %>%
-    mutate(all_converged = mean(Converge)) %>%
-    ungroup() %>%
-    filter(Station>1, all_converged==1, !(model %in% c('censored_upper85_cprop1','censored_cprop1')) ) %>%
+    filter(Station>1, all_converged==1) %>%
     group_by(model, Station, correlation, sat_level,  mean_attract) %>%
     mutate(Coverage_Mean = mean(Rel_Coverage),
            UCL=mean(Rel_Coverage)+(2/sqrt(length(Rel_Coverage)))*sqrt(mean(Rel_Coverage)*(1-mean(Rel_Coverage))),
@@ -1185,8 +1139,8 @@ multiplot(
               aes(x=Station, y=Coverage_Mean, ymin=LCL, ymax=UCL, colour=model, group=model, fill = mean_attract),
               xmin = -Inf,xmax = Inf,
               ymin = -Inf,ymax = Inf,alpha = 0.3) +
-    geom_errorbar(position = position_dodge(width=0.8)) +
-    geom_point(position = position_dodge(width=0.8), size=2) +
+    geom_errorbar(position = position_dodge(width=0.9)) +
+    geom_point(position = position_dodge(width=0.9), size=2) +
     facet_grid(mean_attract + sat_level ~ correlation , scales = 'free_y',
                labeller = labeller(
                  correlation=c(
@@ -1205,43 +1159,43 @@ multiplot(
                  )
                )) +
     geom_hline(yintercept=0.95) +
-    ggtitle('Coverage of 95% Credible Intervals of Relative Abundance vs Method',
-            subtitle = 'Rows are trends in relative abundance of target species and the average degree of hook saturation,\nColumns are correlation of target species\' abundance with saturation events') +
-    ylab('Coverage of 95% Credible Intervals') +
+    ggtitle('Coverage of intervals of relative abundance for each method')+#,
+            #subtitle = 'Rows are trends in relative abundance of target species and the average degree of hook saturation,\nColumns are correlation of target species\' abundance with saturation events') +
+    ylab('Coverage') +
     xlab('Year') + guides(fill='none') +
     scale_fill_brewer(palette = 'Pastel1') +
     theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
           panel.background = element_blank(), axis.line = element_blank(),
-          legend.position = 'right') +
-    scale_color_viridis_d(labels=c('Naive','Adjusted','Censored','Censored Adj')) +
-    scale_shape_manual(labels=c('Naive','Adjusted','Censored','Censored Adj'),
-                       values=c('circle','triangle','square','square')) +
-    guides(color=guide_legend(override.aes=list(fill=NA))),
-  rel_abund_plot,
-  layout = matrix(c(rep(1,2000),rep(NA,55), rep(2,445)), nrow = 500, ncol = 5, byrow = F))
+          legend.position = 'left', strip.text.y = element_blank()) +
+    scale_color_viridis_d(labels=c('CPUE','ICR','Censored 1','Censored 1 Q','Censored 0.95 Q')) +
+    scale_shape_manual(labels=c('CPUE','ICR','Censored 1','Censored 1 Q','Censored 0.95 Q'),
+                       values=c('circle','triangle','cross','plus','square')) +
+    guides(color=guide_legend(override.aes=list(fill=NA)))+ labs(colour='Method', shape='Method'),
+  layout = matrix(c(rep(NA,32),rep(1,468),rep(2,2000)), nrow = 500, ncol = 5, byrow = F))
 
-## Try aggregating over the years
 multiplot(
+  rel_abund_plot + ggtitle('Simulated abundance'),
   Results %>%
+    filter(!(model %in% c('censored','adjust'))) %>%
     group_by(sat_level, mean_attract, correlation, nsim) %>%
     mutate(all_converged = mean(Converge)) %>%
     ungroup() %>%
-    filter(Station>1, all_converged==1, !(model %in% c('censored_upper85_cprop1','censored_cprop1')) ) %>%
-    group_by(model, correlation, sat_level,  mean_attract) %>%
-    mutate(Mean = median(Rel_Bias),
-           UCL = median(Rel_Bias)+(2/sqrt(length(Rel_Bias)))*mad(Rel_Bias),
-           LCL = median(Rel_Bias)-(2/sqrt(length(Rel_Bias)))*mad(Rel_Bias)) %>%
-    #ungroup(Station) %>%
-    mutate(random_samp = c(T, rep(F, length(Rel_Bias)-1))) %>%
-    #group_by(Station) %>%
-    ggplot(aes(x=correlation, y=Mean, ymin=LCL, ymax=UCL, colour=model, group=model, shape=model)) +
+    filter(Station>1, all_converged==1) %>%
+    group_by(model, Station, correlation, sat_level,  mean_attract) %>%
+    mutate(Mean = median(Rel_RMSE),
+           UCL = median(Rel_RMSE)+(2/sqrt(length(Rel_RMSE)))*mad(Rel_RMSE),
+           LCL = median(Rel_RMSE)-(2/sqrt(length(Rel_RMSE)))*mad(Rel_RMSE)) %>%
+    ungroup(Station) %>%
+    mutate(random_samp = c(T, rep(F, length(Rel_RMSE)-1))) %>%
+    group_by(Station) %>%
+    ggplot(aes(x=Station, y=Mean, ymin=LCL, ymax=UCL, colour=model, group=model, shape=model)) +
     geom_rect(data= ~.x[.x$random_samp==T,],
-              aes(x=correlation, y=Mean, ymin=LCL, ymax=UCL, colour=model, group=model, fill = mean_attract),
+              aes(x=Station, y=Mean, ymin=LCL, ymax=UCL, colour=model, group=model, fill = mean_attract),
               xmin = -Inf,xmax = Inf,
               ymin = -Inf,ymax = Inf,alpha = 0.3) +
-    geom_errorbar(position = position_dodge(width=0.8)) +
-    geom_point(position = position_dodge(width=0.8), size=2) +
-    facet_grid(mean_attract + sat_level ~ . , scales = 'free_y',
+    #geom_errorbar(position = position_dodge(width=0.9)) +
+    geom_point(position = position_dodge(width=0.9), size=2) +
+    facet_grid(mean_attract + sat_level ~ correlation , scales = 'free_y',
                labeller = labeller(
                  correlation=c(
                    negative = 'negative correlation',
@@ -1259,296 +1213,43 @@ multiplot(
                  )
                )) +
     geom_hline(yintercept=0) +
-    ggtitle('Bias in Relative Abundance Indices Across Years 2-6 vs Method',
-            subtitle = 'Rows are trends in relative abundance of target species and the average degree of hook saturation,\nX-axis values are correlation of target species\' abundance with saturation events') +
-    ylab('Bias in Relative Abundance Index') +
-    xlab('Correlation') + guides(fill='none') +
-    scale_fill_brewer(palette = 'Pastel1') +
-    theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
-          panel.background = element_blank(), axis.line = element_blank(),
-          legend.position = 'right') +
-    scale_color_viridis_d(labels=c('Naive','Adjusted','Censored','Censored Adj')) +
-    scale_shape_manual(labels=c('Naive','Adjusted','Censored','Censored Adj'),
-                       values=c('circle','triangle','square','square')) +
-    guides(color=guide_legend(override.aes=list(fill=NA))),
-  rel_abund_plot,
-  layout = matrix(c(rep(1,2000),rep(NA,40), rep(2,460)), nrow = 500, ncol = 5, byrow = F))
-
-
-multiplot(
-  Results %>%
-    group_by(sat_level, mean_attract, correlation, nsim) %>%
-    mutate(all_converged = mean(Converge)) %>%
-    ungroup() %>%
-    filter(Station>1, all_converged==1, !(model %in% c('censored_upper85_cprop1','censored_cprop1')) ) %>%
-    group_by(model, correlation, sat_level,  mean_attract) %>%
-    mutate(Mean = median(Rel_RMSE),
-           UCL = median(Rel_RMSE)+(2/sqrt(length(Rel_RMSE)))*mad(Rel_RMSE),
-           LCL = median(Rel_RMSE)-(2/sqrt(length(Rel_RMSE)))*mad(Rel_RMSE)) %>%
-    #ungroup(Station) %>%
-    mutate(random_samp = c(T, rep(F, length(Rel_Bias)-1))) %>%
-    #group_by(Station) %>%
-    ggplot(aes(x=correlation, y=Mean, ymin=LCL, ymax=UCL, colour=model, group=model, shape=model)) +
-    geom_rect(data= ~.x[.x$random_samp==T,],
-              aes(x=correlation, y=Mean, ymin=LCL, ymax=UCL, colour=model, group=model, fill = mean_attract),
-              xmin = -Inf,xmax = Inf,
-              ymin = -Inf,ymax = Inf,alpha = 0.3) +
-    geom_errorbar(position = position_dodge(width=0.8)) +
-    geom_point(position = position_dodge(width=0.8), size=2) +
-    facet_grid(mean_attract + sat_level ~ . , scales = 'free_y',
-               labeller = labeller(
-                 correlation=c(
-                   negative = 'negative correlation',
-                   low = 'low positive correlation',
-                   medium = 'med positive correlation',
-                   high = 'high positive correlation'
-                 ),
-                 mean_attract = c(
-                   constant = 'constant target species \nabundance',
-                   linear = 'linearly increasing target \nspecies abundance '
-                 ),
-                 sat_level = c(
-                   low = 'saturation less "common"',
-                   high = 'saturation "common"'
-                 )
-               )) +
-    geom_hline(yintercept=0) +
-    ggtitle('MSE in Relative Abundance Indices Across Years 2-6 vs Method',
-            subtitle = 'Rows are trends in relative abundance of target species and the average degree of hook saturation,\nX-axis values are correlation of target species\' abundance with saturation events') +
-    ylab('MSE in Relative Abundance Index') +
-    xlab('Correlation') + guides(fill='none') +
-    scale_fill_brewer(palette = 'Pastel1') +
-    theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
-          panel.background = element_blank(), axis.line = element_blank(),
-          legend.position = 'right') +
-    scale_color_viridis_d(labels=c('Naive','Adjusted','Censored','Censored Adj')) +
-    scale_shape_manual(labels=c('Naive','Adjusted','Censored','Censored Adj'),
-                       values=c('circle','triangle','square','square')) +
-    guides(color=guide_legend(override.aes=list(fill=NA))),
-  rel_abund_plot,
-  layout = matrix(c(rep(1,2000),rep(NA,40), rep(2,460)), nrow = 500, ncol = 5, byrow = F))
-
-multiplot(
-  Results %>%
-    group_by(sat_level, mean_attract, correlation, nsim) %>%
-    mutate(all_converged = mean(Converge)) %>%
-    ungroup() %>%
-    filter(Station>1, all_converged==1, !(model %in% c('naive','censored_upper85_cprop1','censored_cprop1')) ) %>%
-    group_by(model, correlation, sat_level,  mean_attract) %>%
-    mutate(Mean = median(Rel_RMSE),
-           UCL = median(Rel_RMSE)+(2/sqrt(length(Rel_RMSE)))*mad(Rel_RMSE),
-           LCL = median(Rel_RMSE)-(2/sqrt(length(Rel_RMSE)))*mad(Rel_RMSE)) %>%
-    #ungroup(Station) %>%
-    mutate(random_samp = c(T, rep(F, length(Rel_Bias)-1))) %>%
-    #group_by(Station) %>%
-    ggplot(aes(x=correlation, y=Mean, ymin=LCL, ymax=UCL, colour=model, group=model, shape=model)) +
-    geom_rect(data= ~.x[.x$random_samp==T,],
-              aes(x=correlation, y=Mean, ymin=LCL, ymax=UCL, colour=model, group=model, fill = mean_attract),
-              xmin = -Inf,xmax = Inf,
-              ymin = -Inf,ymax = Inf,alpha = 0.3) +
-    geom_errorbar(position = position_dodge(width=0.8)) +
-    geom_point(position = position_dodge(width=0.8), size=2) +
-    facet_grid(mean_attract + sat_level ~ . , scales = 'free_y',
-               labeller = labeller(
-                 correlation=c(
-                   negative = 'negative correlation',
-                   low = 'low positive correlation',
-                   medium = 'med positive correlation',
-                   high = 'high positive correlation'
-                 ),
-                 mean_attract = c(
-                   constant = 'constant target species \nabundance',
-                   linear = 'linearly increasing target \nspecies abundance '
-                 ),
-                 sat_level = c(
-                   low = 'saturation less "common"',
-                   high = 'saturation "common"'
-                 )
-               )) +
-    geom_hline(yintercept=0) +
-    ggtitle('MSE in Relative Abundance Indices Across Years 2-6 vs Method',
-            subtitle = 'Rows are trends in relative abundance of target species and the average degree of hook saturation,\nX-axis values are correlation of target species\' abundance with saturation events') +
-    ylab('MSE in Relative Abundance Index') +
-    xlab('Correlation') + guides(fill='none') +
-    scale_fill_brewer(palette = 'Pastel1') +
-    theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
-          panel.background = element_blank(), axis.line = element_blank(),
-          legend.position = 'right') +
-    scale_color_viridis_d(labels=c('Adjusted','Censored','Censored Adj')) +
-    scale_shape_manual(labels=c('Adjusted','Censored','Censored Adj'),
-                       values=c('triangle','square','square')) +
-    guides(color=guide_legend(override.aes=list(fill=NA))),
-  rel_abund_plot,
-  layout = matrix(c(rep(1,2000),rep(NA,40), rep(2,460)), nrow = 500, ncol = 5, byrow = F))
-
-multiplot(
-  Results %>%
-    group_by(sat_level, mean_attract, correlation, nsim) %>%
-    mutate(all_converged = mean(Converge)) %>%
-    ungroup() %>%
-    filter(Station>5, all_converged==1, !(model %in% c('censored_upper85_cprop1','censored_cprop1')) ) %>%
-    group_by(model, correlation, sat_level,  mean_attract) %>%
-    mutate(Coverage_Mean = mean(Rel_Coverage),
-           UCL=pmin(mean(Rel_Coverage)+(2/sqrt(length(Rel_Coverage)))*sqrt(mean(Rel_Coverage)*(1-mean(Rel_Coverage))),1),
-           LCL=pmax(0,mean(Rel_Coverage)-(2/sqrt(length(Rel_Coverage)))*sqrt(mean(Rel_Coverage)*(1-mean(Rel_Coverage))))) %>%
-    #ungroup(Station) %>%
-    mutate(random_samp = c(T, rep(F, length(Rel_Bias)-1))) %>%
-    #group_by(Station) %>%
-    ggplot(aes(x=correlation, y=Coverage_Mean, ymin=LCL, ymax=UCL, colour=model, group=model, shape=model)) +
-    geom_rect(data= ~.x[.x$random_samp==T,],
-              aes(x=correlation, y=Coverage_Mean, ymin=LCL, ymax=UCL, colour=model, group=model, fill = mean_attract),
-              xmin = -Inf,xmax = Inf,
-              ymin = -Inf,ymax = Inf,alpha = 0.3) +
-    geom_errorbar(position = position_dodge(width=0.8)) +
-    geom_point(position = position_dodge(width=0.8), size=2) +
-    ylim(c(0,1)) +
-    facet_grid(mean_attract + sat_level ~ . , scales = 'free_y',
-               labeller = labeller(
-                 correlation=c(
-                   negative = 'negative correlation',
-                   low = 'low positive correlation',
-                   medium = 'med positive correlation',
-                   high = 'high positive correlation'
-                 ),
-                 mean_attract = c(
-                   constant = 'constant target species \nabundance',
-                   linear = 'linearly increasing target \nspecies abundance '
-                 ),
-                 sat_level = c(
-                   low = 'saturation less "common"',
-                   high = 'saturation "common"'
-                 )
-               )) +
-    geom_hline(yintercept=0.95) +
-    ggtitle('Coverage in Credible Intervals of Relative Abundance in Year 6 vs Method',
-            subtitle = 'Rows are trends in relative abundance of target species and the average degree of hook saturation,\nX-axis values are correlation of target species\' abundance with saturation events') +
-    ylab('Coverage in Year 6 Credible Intervals of Relative Abundance') +
-    xlab('Correlation') + guides(fill='none') +
-    scale_fill_brewer(palette = 'Pastel1') +
-    theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
-          panel.background = element_blank(), axis.line = element_blank(),
-          legend.position = 'right') +
-    scale_color_viridis_d(labels=c('Naive','Adjusted','Censored','Censored Adj')) +
-    scale_shape_manual(labels=c('Naive','Adjusted','Censored','Censored Adj'),
-                       values=c('circle','triangle','square','square')) +
-    guides(color=guide_legend(override.aes=list(fill=NA))),
-  rel_abund_plot,
-  layout = matrix(c(rep(1,2000),rep(NA,40), rep(2,460)), nrow = 500, ncol = 5, byrow = F))
-
-## Create a summary plot showing the convergence, MSE and coverage of competing methods
-multiplot(
-  Results %>%
-    group_by(sat_level, mean_attract, correlation, nsim) %>%
-    mutate(all_converged = mean(Converge)) %>%
-    ungroup() %>%
-    filter(Station>5, all_converged==1, !(model %in% c('naive','adjust')), sat_level=='low', mean_attract=='linear', correlation=='medium' ) %>%
-    group_by(model, correlation, sat_level,  mean_attract) %>%
-    mutate(Coverage_Mean = mean(Rel_Coverage),
-           UCL=mean(Rel_Coverage)+(2/sqrt(length(Rel_Coverage)))*sqrt(mean(Rel_Coverage)*(1-mean(Rel_Coverage))),
-           LCL=mean(Rel_Coverage)-(2/sqrt(length(Rel_Coverage)))*sqrt(mean(Rel_Coverage)*(1-mean(Rel_Coverage)))) %>%
-    #ungroup(Station) %>%
-    mutate(random_samp = c(T, rep(F, length(Rel_Bias)-1))) %>%
-    #group_by(Station) %>%
-    ggplot(aes(x=model, y=Coverage_Mean, ymin=LCL, ymax=UCL, colour=model, group=model, shape=model)) +
-    geom_errorbar(position = position_dodge(width=0.8)) +
-    geom_point(position = position_dodge(width=0.8), size=2) +
-    ylim(c(0,1)) +
-    facet_grid(mean_attract + sat_level ~ . , scales = 'free_y',
-               labeller = labeller(
-                 correlation=c(
-                   negative = 'negative correlation',
-                   low = 'low positive correlation',
-                   medium = 'med positive correlation',
-                   high = 'high positive correlation'
-                 ),
-                 mean_attract = c(
-                   constant = 'constant target species \nabundance',
-                   linear = 'linearly increasing target \nspecies abundance '
-                 ),
-                 sat_level = c(
-                   low = 'saturation less "common"',
-                   high = 'saturation "common"'
-                 )
-               )) +
-    geom_hline(yintercept=0.95) +
-    ggtitle('Coverage in Credible Intervals of Relative Abundance in Year 6 vs Method',
-            subtitle = 'Abundance of target species is increasing and the average degree of hook saturation is low,\nX-axis value are the censored estimators with different upper quantiles of catch data specified as observed') +
-    ylab('Coverage in Year 6') +
-    xlab('Estimator') + guides(fill='none') +
-    scale_fill_brewer(palette = 'Pastel1') +
-    # theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
-    #       panel.background = element_blank(), axis.line = element_blank(),
-    #       legend.position = 'right') +
-    scale_color_viridis_d(labels=c('Censored','Censored qMax','Censored q95','Censored q85')) +
-    scale_shape_manual(labels=c('Censored','Censored qMax','Censored q95','Censored q85'),
-                       values=c('square','square','square','square')) +
-    scale_x_discrete(labels=c("censored" = "Censored", "censored_cprop1" = "Censored qMax",
-                              "censored_upper85_cprop1" = "Censored q95","censored_upper85" = "Censored q85 \n'Censored Adj'")) +
-    guides(color='none', model='none', shape='none'),
-  Results %>%
-    group_by(sat_level, mean_attract, correlation, nsim) %>%
-    mutate(all_converged = mean(Converge)) %>%
-    ungroup() %>%
-    filter(Station>1, all_converged==1, !(model %in% c('naive','adjust')), sat_level=='low', mean_attract=='linear', correlation=='medium' ) %>%
-    group_by(model, correlation, sat_level,  mean_attract) %>%
-    mutate(Mean = median(Rel_RMSE),
-           UCL = median(Rel_RMSE)+(2/sqrt(length(Rel_RMSE)))*mad(Rel_RMSE),
-           LCL = median(Rel_RMSE)-(2/sqrt(length(Rel_RMSE)))*mad(Rel_RMSE)) %>%
-    #ungroup(Station) %>%
-    mutate(random_samp = c(T, rep(F, length(Rel_Bias)-1))) %>%
-    #group_by(Station) %>%
-    ggplot(aes(x=model, y=Mean, ymin=LCL, ymax=UCL, colour=model, group=model, shape=model)) +
-    geom_errorbar(position = position_dodge(width=0.8)) +
-    geom_point(position = position_dodge(width=0.8), size=2) +
-    #ylim(c(0,1)) +
-    geom_hline(yintercept = 0) +
-    facet_grid(mean_attract + sat_level ~ . , scales = 'free_y',
-               labeller = labeller(
-                 correlation=c(
-                   negative = 'negative correlation',
-                   low = 'low positive correlation',
-                   medium = 'med positive correlation',
-                   high = 'high positive correlation'
-                 ),
-                 mean_attract = c(
-                   constant = 'constant target species \nabundance',
-                   linear = 'linearly increasing target \nspecies abundance '
-                 ),
-                 sat_level = c(
-                   low = 'saturation less "common"',
-                   high = 'saturation "common"'
-                 )
-               )) +
-    ggtitle('MSE in Relative Abundance Indices vs Method') +
+    ggtitle('MSE in relative abundance for each method')+#,
+            #subtitle = 'Rows are trends in relative abundance of target species and the average degree of hook saturation. Columns are correlation \nof target species\' abundance with saturation events. 95% Confidence intervals smaller than plotting shapes so omitted.') +
     ylab('MSE') +
-    xlab('Estimator') + guides(fill='none') +
+    xlab('Year') + guides(fill='none') +
     scale_fill_brewer(palette = 'Pastel1') +
-    # theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
-    #       panel.background = element_blank(), axis.line = element_blank(),
-    #       legend.position = 'right') +
-    scale_color_viridis_d(labels=c('Censored','Censored qMax','Censored q95','Censored q85')) +
-    scale_shape_manual(labels=c('Censored','Censored qMax','Censored q95','Censored q85'),
-                       values=c('square','square','square','square')) +
-    scale_x_discrete(labels=c("censored" = "Censored", "censored_cprop1" = "Censored qMax",
-                              "censored_upper85_cprop1" = "Censored q95","censored_upper85" = "Censored q85 \n'Censored Adj'")) +
-    guides(color='none', model='none', shape='none'),
+    theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+          panel.background = element_blank(), axis.line = element_blank(),
+          legend.position = 'left', strip.text.y = element_blank()) +
+    scale_color_viridis_d(labels=c('CPUE','Censored 1','Censored 1 Q','Censored 0.95 Q')) +
+    scale_shape_manual(labels=c('CPUE','Censored 1','Censored 1 Q','Censored 0.95 Q'),
+                       values=c('circle','cross','plus','square')) +
+    guides(color=guide_legend(override.aes=list(fill=NA)))+ labs(colour='Method', shape='Method'),
+  layout = matrix(c(rep(NA,32),rep(1,468),rep(2,2000)), nrow = 500, ncol = 5, byrow = F))
+
+multiplot(
+  rel_abund_plot + ggtitle('Simulated abundance'),
   Results %>%
+    filter(!(model %in% c('censored'))) %>%
     group_by(sat_level, mean_attract, correlation, nsim) %>%
     mutate(all_converged = mean(Converge)) %>%
     ungroup() %>%
-    filter(Station>1, !(model %in% c('naive','adjust')), sat_level=='low', mean_attract=='linear', correlation=='medium' ) %>%
-    group_by(model, correlation, sat_level,  mean_attract) %>%
-    mutate(Converge_Mean = mean(Converge),
-           UCL=mean(Converge)+(2/sqrt(length(Converge)))*sqrt(mean(Converge)*(1-mean(Converge))),
-           LCL=mean(Converge)-(2/sqrt(length(Converge)))*sqrt(mean(Converge)*(1-mean(Converge))),
-           Mean = mean(Prop_Sat_85),
-           Mean2 = mean(Prop_Sat_100)) %>%
-    ggplot(aes(x=model, y=Converge_Mean, ymin=LCL, ymax=UCL, colour=model, group=model)) +
-    #geom_errorbar(position = position_dodge(width=0.3)) +
-    geom_point(position = position_dodge(width=0.3)) +
-    ylim(c(0,1)) +
-    geom_hline(yintercept = 1) +
-    facet_grid(mean_attract + sat_level ~ . , scales = 'free_y',
+    filter(Station>1, all_converged==1) %>%
+    group_by(model, Station, correlation, sat_level,  mean_attract) %>%
+    mutate(Mean = median(Rel_RMSE),
+           UCL = median(Rel_RMSE)+(2/sqrt(length(Rel_RMSE)))*mad(Rel_RMSE),
+           LCL = median(Rel_RMSE)-(2/sqrt(length(Rel_RMSE)))*mad(Rel_RMSE)) %>%
+    ungroup(Station) %>%
+    mutate(random_samp = c(T, rep(F, length(Rel_RMSE)-1))) %>%
+    group_by(Station) %>%
+    ggplot(aes(x=Station, y=Mean, ymin=LCL, ymax=UCL, colour=model, group=model, shape=model)) +
+    geom_rect(data= ~.x[.x$random_samp==T,],
+              aes(x=Station, y=Mean, ymin=LCL, ymax=UCL, colour=model, group=model, fill = mean_attract),
+              xmin = -Inf,xmax = Inf,
+              ymin = -Inf,ymax = Inf,alpha = 0.3) +
+    #geom_errorbar(position = position_dodge(width=0.9)) +
+    geom_point(position = position_dodge(width=0.9), size=2) +
+    facet_grid(mean_attract + sat_level ~ correlation , scales = 'free_y',
                labeller = labeller(
                  correlation=c(
                    negative = 'negative correlation',
@@ -1565,791 +1266,17 @@ multiplot(
                    high = 'saturation "common"'
                  )
                )) +
-    ylab('Convergence Proportion') +
-    ggtitle('Proportion of 100 Simulations That Converged vs Method') +
-    xlab('Estimator') + guides(fill='none') +
-    scale_fill_brewer(palette = 'Pastel1') +
-    # theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
-    #       panel.background = element_blank(), axis.line = element_blank(),
-    #       legend.position = 'right') +
-    scale_color_viridis_d(labels=c('Censored','Censored qMax','Censored q95','Censored q85')) +
-    scale_shape_manual(labels=c('Censored','Censored qMax','Censored q95','Censored q85'),
-                       values=c('square','square','square','square')) +
-    scale_x_discrete(labels=c("censored" = "Censored", "censored_cprop1" = "Censored qMax",
-                              "censored_upper85_cprop1" = "Censored q95","censored_upper85" = "Censored q85 \n'Censored Adj'")) +
-    guides(color='none', model='none', shape='none'),
-  cols=1)
-## Repeat, but this time average over all settings
-multiplot(
-  Results %>%
-    group_by(sat_level, mean_attract, correlation, nsim) %>%
-    mutate(all_converged = mean(Converge)) %>%
-    ungroup() %>%
-    filter(Station>1, all_converged==1, !(model %in% c('naive','adjust'))) %>%
-    group_by(model) %>%
-    mutate(Coverage_Mean = mean(Rel_Coverage),
-           UCL=mean(Rel_Coverage)+(2/sqrt(length(Rel_Coverage)))*sqrt(mean(Rel_Coverage)*(1-mean(Rel_Coverage))),
-           LCL=mean(Rel_Coverage)-(2/sqrt(length(Rel_Coverage)))*sqrt(mean(Rel_Coverage)*(1-mean(Rel_Coverage)))) %>%
-    #ungroup(Station) %>%
-    mutate(random_samp = c(T, rep(F, length(Rel_Bias)-1))) %>%
-    #group_by(Station) %>%
-    ggplot(aes(x=model, y=Coverage_Mean, ymin=LCL, ymax=UCL, colour=model, group=model, shape=model)) +
-    geom_errorbar(position = position_dodge(width=0.8)) +
-    geom_point(position = position_dodge(width=0.8), size=2) +
-    ylim(c(0,1)) +
-    geom_hline(yintercept=0.95) +
-    ggtitle('Coverage in Credible Intervals of Relative Abundance vs Method',
-            subtitle = 'Results are aggregated over all correlated simulation settings,\nX-axis values are the censored estimators, each with a different adjustment made to it') +
-    ylab('Coverage') +
-    xlab('Estimator') + guides(fill='none') +
-    scale_fill_brewer(palette = 'Pastel1') +
-    # theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
-    #       panel.background = element_blank(), axis.line = element_blank(),
-    #       legend.position = 'right') +
-    scale_color_viridis_d(labels=c('Censored','Censored qMax','Censored q95','Censored q85')) +
-    scale_shape_manual(labels=c('Censored','Censored qMax','Censored q95','Censored q85'),
-                       values=c('square','square','square','square')) +
-    scale_x_discrete(labels=c("censored" = "Censored", "censored_cprop1" = "Censored qMax",
-                              "censored_upper85_cprop1" = "Censored q95","censored_upper85" = "Censored q85 \n'Censored Adj'")) +
-    guides(color='none', model='none', shape='none'),
-  Results %>%
-    group_by(sat_level, mean_attract, correlation, nsim) %>%
-    mutate(all_converged = mean(Converge)) %>%
-    ungroup() %>%
-    filter(Station>1, all_converged==1, !(model %in% c('naive','adjust'))) %>%
-    group_by(model) %>%
-    mutate(Mean = median(Rel_RMSE),
-           UCL = median(Rel_RMSE)+(2/sqrt(length(Rel_RMSE)))*mad(Rel_RMSE),
-           LCL = median(Rel_RMSE)-(2/sqrt(length(Rel_RMSE)))*mad(Rel_RMSE)) %>%
-    #ungroup(Station) %>%
-    #group_by(Station) %>%
-    ggplot(aes(x=model, y=Mean, ymin=LCL, ymax=UCL, colour=model, group=model, shape=model)) +
-    geom_errorbar(position = position_dodge(width=0.8)) +
-    geom_point(position = position_dodge(width=0.8), size=2) +
-    #ylim(c(0,1)) +
-    geom_hline(yintercept = 0) +
-    ggtitle('MSE in Relative Abundance Indices vs Method') +
+    geom_hline(yintercept=0) +
+    ggtitle('MSE in relative abundance for each method')+#,
+            #subtitle = 'Rows are trends in relative abundance of target species and the average degree of hook saturation. Columns are correlation \nof target species\' abundance with saturation events. 95% Confidence intervals smaller than plotting shapes so omitted.') +
     ylab('MSE') +
-    xlab('Estimator') + guides(fill='none') +
+    xlab('Year') + guides(fill='none') +
     scale_fill_brewer(palette = 'Pastel1') +
-    # theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
-    #       panel.background = element_blank(), axis.line = element_blank(),
-    #       legend.position = 'right') +
-    scale_color_viridis_d(labels=c('Censored','Censored qMax','Censored q95','Censored q85')) +
-    scale_shape_manual(labels=c('Censored','Censored qMax','Censored q95','Censored q85'),
-                       values=c('square','square','square','square')) +
-    scale_x_discrete(labels=c("censored" = "Censored", "censored_cprop1" = "Censored qMax",
-                              "censored_upper85_cprop1" = "Censored q95","censored_upper85" = "Censored q85 \n'Censored Adj'")) +
-    guides(color='none', model='none', shape='none'),
-  Results %>%
-    group_by(sat_level, mean_attract, correlation, nsim) %>%
-    mutate(all_converged = mean(Converge)) %>%
-    ungroup() %>%
-    filter(Station>1, !(model %in% c('naive','adjust'))) %>%
-    group_by(model) %>%
-    mutate(Converge_Mean = mean(Converge),
-           UCL=mean(Converge)+(2/sqrt(length(Converge)))*sqrt(mean(Converge)*(1-mean(Converge))),
-           LCL=mean(Converge)-(2/sqrt(length(Converge)))*sqrt(mean(Converge)*(1-mean(Converge))),
-           Mean = mean(Prop_Sat_85),
-           Mean2 = mean(Prop_Sat_100)) %>%
-    ggplot(aes(x=model, y=Converge_Mean, ymin=LCL, ymax=UCL, colour=model, group=model)) +
-    #geom_errorbar(position = position_dodge(width=0.3)) +
-    geom_point(position = position_dodge(width=0.3)) +
-    ylim(c(0,1)) +
-    geom_hline(yintercept = 1) +
-    ylab('Convergence Proportion') +
-    ggtitle('Proportion of Simulations that Converged vs Method') +
-    xlab('Estimator') + guides(fill='none') +
-    scale_fill_brewer(palette = 'Pastel1') +
-    # theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
-    #       panel.background = element_blank(), axis.line = element_blank(),
-    #       legend.position = 'right') +
-    scale_color_viridis_d(labels=c('Censored','Censored qMax','Censored q95','Censored q85')) +
-    scale_shape_manual(labels=c('Censored','Censored qMax','Censored q95','Censored q85'),
-                       values=c('square','square','square','square')) +
-    scale_x_discrete(labels=c("censored" = "Censored", "censored_cprop1" = "Censored qMax",
-                              "censored_upper85_cprop1" = "Censored q95","censored_upper85" = "Censored q85 \n'Censored Adj'")) +
-    guides(color='none', model='none', shape='none'),
-  cols=1)
-
-Results %>%
-  filter(Station>1, !(model %in% c('naive','adjust') ) )%>%
-  group_by(model, correlation,  sat_level, mean_attract) %>%
-  mutate(Converge_Mean = mean(Converge),
-         #UCL=pmin(1,mean(Converge)+(2/sqrt(length(Converge)))*sqrt(mean(Converge)*(1-mean(Converge)))),
-         #LCL=pmax(0,mean(Converge)-(2/sqrt(length(Converge)))*sqrt(mean(Converge)*(1-mean(Converge)))),
-         Mean = mean(Prop_Sat_85),
-         Mean2 = mean(Prop_Sat_100)) %>%
-  ungroup(Station) %>%
-  mutate(random_samp = c(T, rep(F, length(Rel_Bias)-1))) %>%
-  group_by(Station) %>%
-  ggplot(aes(x=model, y=Converge_Mean, colour=model, group=model)) +
-  geom_rect(data= ~.x[.x$random_samp==T,],
-            aes(x=model, y=Mean, colour=model, group=model, fill = mean_attract),
-            xmin = -Inf,xmax = Inf,
-            ymin = -Inf,ymax = Inf,alpha = 0.3) +
-  #geom_errorbar(position = position_dodge(width=0.3)) +
-  geom_point(position = position_dodge(width=0.3)) +
-  facet_grid(mean_attract + sat_level ~ correlation) +
-  ylab('Convergence Proportion') +
-  ggtitle('Proportion of 100 Simulations That Converged vs Method',
-          subtitle = 'Rows are degree of saturation and trend in relative abundance,\nColumns are correlation of target species\' abundance with saturation events \nDashed black line indicates proportion of converged simulations with 85% bait removal \nDotted red line indicates proportion of converged simulations with 100% bait removal') +
-  xlab('Year') +  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
-  geom_hline(aes(yintercept=Mean), linetype='dashed', colour='black') +
-  geom_hline(aes(yintercept=Mean2), linetype='dotted', colour='red') +
-  geom_hline(yintercept = 1, linetype='solid', colour='black') +
-  scale_x_discrete(labels=c("censored" = "Censored", "censored_cprop1" = "Censored qMax",
-                            "censored_upper85_cprop1" = "Censored q95","censored_upper85" = "Censored q85 \n'Censored Adj'")) +
-  guides(colour='none', fill='none') +
-  scale_fill_brewer(palette = 'Pastel1')
-
-Results %>%
-  group_by(sat_level, mean_attract, correlation, nsim) %>%
-  mutate(all_converged = mean(Converge)) %>%
-  ungroup() %>%
-  filter(all_converged==1) %>%
-  group_by(model,correlation,  sat_level, mean_attract) %>%
-  summarise(Mean = mean(Prop_Sat_85),
-            Mean2 = mean(Prop_Sat_100)) %>%
-  ggplot(aes(x=model, y=Mean))+
-  geom_point(position = position_dodge(width=0.3)) +
-  geom_point(aes(x=model, y=Mean2), colour='red')+
-  facet_grid(correlation ~sat_level + mean_attract) +
-  ggtitle('Proportion of Converged Simulations with Specified Degree of Hook Saturation',
-          subtitle = 'Columns are degree of saturation and trend in relative abundance,\nRows are correlation of target species\' abundance with saturation events \nRed and Black correspond to 100% and 85% Hook Saturation respectively') +
-  ylab('Proportion') + xlab('Model')
-
-Results %>%
-  group_by(sat_level, mean_attract, correlation, nsim) %>%
-  mutate(all_converged = mean(Converge)) %>%
-  ungroup() %>%
-  filter(all_converged==1) %>%
-  group_by(model,correlation,  sat_level, mean_attract, Station) %>%
-  summarise(Mean = mean(Prop_Sat_85),
-            Mean2 = mean(Prop_Sat_100)) %>%
-  ggplot(aes(x=Station, y=Mean))+
-  geom_point(position = position_dodge(width=0.3)) +
-  geom_point(aes(x=Station, y=Mean2), colour='red')+
-  facet_grid(sat_level + mean_attract ~ correlation) +
-  ggtitle('Proportion of Simulations with Specified Degree of Hook Saturation vs. Year',
-          subtitle = 'Columns are correlation of target species\' abundance with saturation events \nRows are degree of saturation and trend in relative abundance. \nRed and Black correspond to 100% and 85% Hook Saturation respectively') +
-  ylab('Proportion') + xlab('Year') + ylim(c(0,1))
-
-Results %>%
-  group_by(sat_level, mean_attract, correlation, nsim) %>%
-  mutate(all_converged = mean(Converge)) %>%
-  ungroup() %>%
-  filter(all_converged<1) %>%
-  group_by(model,correlation,  sat_level, mean_attract) %>%
-  summarise(Mean = mean(Prop_Sat_85),
-            Mean2 = mean(Prop_Sat_100)) %>%
-  ggplot(aes(x=model, y=Mean))+
-  geom_point(position = position_dodge(width=0.3)) +
-  geom_point(aes(x=model, y=Mean2), colour='red')+
-  facet_grid(correlation ~sat_level + mean_attract) +
-  ggtitle('Proportion of Non-Converged Simulations with Specified Degree of Hook Saturation',
-          subtitle = 'Columns are degree of saturation and trend in relative abundance,\nRows are correlation of target species\' abundance with saturation events \nRed and Black correspond to 100% and 85% Hook Saturation respectively') +
-  ylab('Proportion') + xlab('Model')
-
-Results %>%
-  group_by(model, Station, correlation,  sat_level, mean_attract) %>%
-  filter(mean_attract=='constant') %>%
-  summarise(Mean = mean(Prop_Sat_85-Prop_Sat_100),
-            Mean2 = mean(Prop_Sat_100)) %>%
-  ggplot(aes(x=Station, y=Mean))+
-  geom_point(position = position_dodge(width=0.3)) +
-  geom_point(aes(x=Station, y=Mean2), colour='red')+
-  facet_grid(correlation ~sat_level) + geom_hline(yintercept = 0)
-
-Results %>%
-  group_by(model, Station, correlation,  sat_level, mean_attract) %>%
-  filter(mean_attract=='linear') %>%
-  summarise(Mean = mean(Prop_Sat_85-Prop_Sat_100),
-            Mean2 = mean(Prop_Sat_100)) %>%
-  ggplot(aes(x=Station, y=Mean))+
-  geom_point(position = position_dodge(width=0.3)) +
-  geom_point(aes(x=Station, y=Mean2), colour='red')+
-  facet_grid(correlation ~sat_level)
-
-# At year 6, how many of the runs favour the censored estimators with respect to MSE?
-Results %>%
-  group_by(sat_level, mean_attract, correlation, nsim) %>%
-  mutate(all_converged = mean(Converge)) %>%
-  ungroup() %>%
-  filter(Station==6, all_converged==1) %>%
-  group_by_all() %>%
-  ungroup(model, Rel_RMSE, Bias, Rel_Bias, Coverage, Rel_Coverage, Converge, RMSE,Prop_Sat_85,Prop_Sat_100, all_converged) %>%
-  mutate(Result = Rel_RMSE-min(Rel_RMSE)) %>%
-  ungroup() %>%
-  group_by(model) %>%
-  summarise(sum(Result==0))
-
-# (161 + 12 + 62 + 49)  / (161 + 12 + 62 + 49 + 257) = 52.5%
-# Note that the ICR-based estimator never wins
-
-# At year 6, how many of the runs favour the censored estimators with respect to Coverage?
-Results %>%
-  group_by(sat_level, mean_attract, correlation, nsim) %>%
-  mutate(all_converged = mean(Converge)) %>%
-  ungroup() %>%
-  filter(Station==6, all_converged==1) %>%
-  group_by_all() %>%
-  ungroup(Rel_RMSE, Bias, Rel_Bias, Coverage, Rel_Coverage, Converge, RMSE,Prop_Sat_85,Prop_Sat_100, all_converged) %>%
-  mutate(Result = Rel_Coverage-0.95) %>%
-  ungroup(nsim) %>%
-  summarise(Result=mean(Result)) %>%
-  ungroup(model) %>%
-  summarise(Best=abs(Result)==min(abs(Result)), model) %>%
-  ungroup() %>%
-  group_by(model) %>%
-  summarise(sum(Best))
-# summarise(mean(Result), mean(Result)-2*sd(Result),
-#           mean(Result)+2*sd(Result))
-
-# 11/16 settings favoured by censored approaches, 5/11 favoured by CPUE-based.
-# Note that the ICR-based estimator never wins
-
-# Compare the non censored models performace in converged and non-converged settings
-Results %>%
-  group_by(sat_level, mean_attract, correlation, nsim) %>%
-  mutate(all_converged = (mean(Converge)==1)) %>%
-  ungroup() %>%
-  filter(Station>1, model %in% c('naive','adjust')) %>%
-  group_by(model,  correlation,  sat_level, mean_attract) %>%
-  mutate(Mean = median(Rel_RMSE),
-         UCL = median(Rel_RMSE)+(2/sqrt(length(Rel_RMSE)))*mad(Rel_RMSE),
-         LCL = median(Rel_RMSE)-(2/sqrt(length(Rel_RMSE)))*mad(Rel_RMSE)) %>%
-  ggplot(aes(x=factor(all_converged), y=Mean, ymin=LCL, ymax=UCL, colour=model, group=model)) +
-  geom_errorbar(position = position_dodge(width=0.8)) +
-  geom_point(position = position_dodge(width=0.8)) +
-  facet_grid(sat_level+mean_attract ~ correlation, scales = 'free_y') +
-  geom_hline(yintercept=0) +
-  ggtitle('MSE in Relative Abundance Indices vs Convergence of Censored Poisson Estimators',
-          subtitle = 'Rows are degree of saturation and trend in relative abundance,\nColumns are correlation of target species\' abundance with saturation events') +
-  ylab('MSE in Relative Abundance Index') +
-  xlab('Year')
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# Results %>%
-#   group_by(sat_level, mean_attract, correlation, nsim) %>%
-#   mutate(all_converged = mean(Converge)) %>%
-#   ungroup() %>%
-#   filter(mean_attract=='constant', Station>1, all_converged==1) %>%
-#   group_by(model, Station, correlation,  sat_level, mean_attract) %>%
-#   mutate(Mean = median(Rel_Bias),
-#          UCL = median(Rel_Bias)+(2/sqrt(length(Rel_Bias)))*mad(Rel_Bias),
-#          LCL = median(Rel_Bias)-(2/sqrt(length(Rel_Bias)))*mad(Rel_Bias)) %>%
-#          #UCL = quantile(Rel_Bias, prob=0.975),
-#          #LCL = quantile(Rel_Bias, prob=0.025)) %>%
-# ggplot(aes(x=Station, y=Mean, ymin=LCL, ymax=UCL, colour=model, group=model)) +
-#   geom_errorbar(position = position_dodge(width=0.3)) +
-#   geom_point(position = position_dodge(width=0.3)) +
-#   facet_grid(correlation + mean_attract ~sat_level) +
-#   geom_hline(yintercept=0) +
-#   ggtitle('Bias in Relative Abundance Indices vs Method',
-#           subtitle = 'True abundance constant across time \nColumns are degree of saturation,\nRows are abilities to locate baited hooks') +
-#   ylab('Bias in Relative Abundance Index') +
-#   xlab('Year')
-
-Results %>%
-  group_by(sat_level, mean_attract, correlation, nsim) %>%
-  mutate(all_converged = mean(Converge)) %>%
-  ungroup() %>%
-  filter(Station>1, all_converged==1) %>%
-  group_by(model, Station, correlation,  sat_level, mean_attract) %>%
-  mutate(Mean = mean(Rel_Bias),
-         UCL = mean(Rel_Bias)+(2/sqrt(length(Rel_Bias)))*sd(Rel_Bias),
-         LCL = mean(Rel_Bias)-(2/sqrt(length(Rel_Bias)))*sd(Rel_Bias)) %>%
-  #UCL = quantile(Rel_Bias, prob=0.975),
-  #LCL = quantile(Rel_Bias, prob=0.025)) %>%
-  ggplot(aes(x=Station, y=Mean, ymin=LCL, ymax=UCL, colour=model, group=model)) +
-  geom_errorbar(position = position_dodge(width=0.3)) +
-  geom_point(position = position_dodge(width=0.3)) +
-  facet_grid(mean_attract + sat_level ~ correlation, scales = 'free_y') +
-  geom_hline(yintercept=0) +
-  ggtitle('Bias in Relative Abundance Indices vs Method',
-          subtitle = 'Rows are degree of saturation and trend in relative abundance,\nColumns are correlation of target species\' abundance with saturation events') +
-  ylab('Bias in Relative Abundance Index') +
-  xlab('Year') +  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))
-
-# Again for just the censored Poisson estimators
-Results %>%
-  group_by(sat_level, mean_attract, correlation, nsim) %>%
-  mutate(all_converged = mean(Converge)) %>%
-  ungroup() %>%
-  filter(Station>1, all_converged==1, !(model %in% c('adjust','naive'))) %>%
-  group_by(model, Station, correlation,  sat_level, mean_attract) %>%
-  mutate(Mean = mean(Rel_Bias),
-         UCL = mean(Rel_Bias)+(2/sqrt(length(Rel_Bias)))*sd(Rel_Bias),
-         LCL = mean(Rel_Bias)-(2/sqrt(length(Rel_Bias)))*sd(Rel_Bias)) %>%
-  #UCL = quantile(Rel_Bias, prob=0.975),
-  #LCL = quantile(Rel_Bias, prob=0.025)) %>%
-  ggplot(aes(x=Station, y=Mean, ymin=LCL, ymax=UCL, colour=model, group=model)) +
-  geom_errorbar(position = position_dodge(width=0.3)) +
-  geom_point(position = position_dodge(width=0.3)) +
-  facet_grid(correlation ~sat_level + mean_attract) +
-  geom_hline(yintercept=0) +
-  ggtitle('Bias in Relative Abundance Indices vs Method',
-          subtitle = 'Columns are degree of saturation and trend in relative abundance,\nRows are correlation of target species\' abundance with saturation events') +
-  ylab('Bias in Relative Abundance Index') +
-  xlab('Year')
-
-
-# Results %>%
-#   group_by(sat_level, mean_attract, correlation, nsim) %>%
-#   mutate(all_converged = mean(Converge)) %>%
-#   ungroup() %>%
-#   filter(mean_attract=='constant', Station>1, all_converged==1) %>%
-#   group_by(model, correlation,  sat_level, mean_attract) %>%
-#   mutate(Mean = median(abs(Rel_Bias)),
-#          UCL = median(abs(Rel_Bias))+(2/sqrt(length(Rel_Bias)))*mad(abs(Rel_Bias)),
-#          LCL = median(abs(Rel_Bias))-(2/sqrt(length(Rel_Bias)))*mad(abs(Rel_Bias))) %>%
-#   #UCL = quantile(Rel_Bias, prob=0.975),
-#   #LCL = quantile(Rel_Bias, prob=0.025)) %>%
-#   ggplot(aes(x=model, y=Mean, ymin=LCL, ymax=UCL, colour=model, group=model)) +
-#   geom_errorbar(position = position_dodge(width=0.3)) +
-#   geom_point(position = position_dodge(width=0.3)) +
-#   facet_grid(correlation ~sat_level, scales="free_y") +
-#   geom_hline(yintercept=0) +
-#   ggtitle('Absolute Error in Relative Abundance Indices vs Method',
-#           subtitle = 'True abundance constant across time \nColumns are degree of saturation,\nRows are abilities to locate baited hooks') +
-#   ylab('Absolute Value of Error in Relative Abundance Index') +
-#   xlab('Model')
-
-Results %>%
-  group_by(sat_level, mean_attract, correlation, nsim) %>%
-  mutate(all_converged = mean(Converge)) %>%
-  ungroup() %>%
-  filter(Station>1, all_converged==1, model!='naive') %>%
-  group_by(model, correlation,  sat_level, mean_attract) %>%
-  mutate(Mean = mean(abs(Rel_Bias)),
-         UCL = mean(abs(Rel_Bias))+(2/sqrt(length(Rel_Bias)))*sd(abs(Rel_Bias)),
-         LCL = mean(abs(Rel_Bias))-(2/sqrt(length(Rel_Bias)))*sd(abs(Rel_Bias))) %>%
-  #UCL = quantile(Rel_Bias, prob=0.975),
-  #LCL = quantile(Rel_Bias, prob=0.025)) %>%
-  ggplot(aes(x=model, y=Mean, ymin=LCL, ymax=UCL, colour=model, group=model)) +
-  geom_errorbar(position = position_dodge(width=0.3)) +
-  geom_point(position = position_dodge(width=0.3)) +
-  facet_grid(correlation ~sat_level + mean_attract) +
-  geom_hline(yintercept=0) +
-  ggtitle('Absolute Error in Relative Abundance Indices vs Method',
-          subtitle = 'Columns are degree of saturation and trend in relative abundance,\nRows are correlation of target species\' abundance with saturation events') +
-  ylab('Absolute Value of Error in Relative Abundance Index') +
-  xlab('Model')
-
-# Results %>%
-#   group_by(sat_level, mean_attract, correlation, nsim) %>%
-#   mutate(all_converged = mean(Converge)) %>%
-#   ungroup() %>%
-#   filter(mean_attract=='constant', Station>1, all_converged==1, model!='naive') %>%
-#   group_by(model, correlation,  sat_level, mean_attract) %>%
-#   mutate(Mean = median(Rel_RMSE),
-#          UCL = median(Rel_RMSE)+(2/sqrt(length(Rel_RMSE)))*mad(Rel_RMSE),
-#          LCL = median(Rel_RMSE)-(2/sqrt(length(Rel_RMSE)))*mad(Rel_RMSE)) %>%
-#   #UCL = quantile(Rel_Bias, prob=0.975),
-#   #LCL = quantile(Rel_Bias, prob=0.025)) %>%
-#   ggplot(aes(x=model, y=Mean, ymin=LCL, ymax=UCL, colour=model, group=model)) +
-#   geom_errorbar(position = position_dodge(width=0.3)) +
-#   geom_point(position = position_dodge(width=0.3)) +
-#   facet_grid(correlation + mean_attract ~sat_level) +
-#   geom_hline(yintercept=0) +
-#   ggtitle('Median Squared Error in Relative Abundance Indices vs Method',
-#           subtitle = 'True abundance constant across time \nColumns are degree of saturation,\nRows are abilities to locate baited hooks') +
-#   ylab('Median Squared Error in Relative Abundance Index') +
-#   xlab('Model')
-
-Results %>%
-  group_by(sat_level, mean_attract, correlation, nsim) %>%
-  mutate(all_converged = mean(Converge)) %>%
-  ungroup() %>%
-  filter(Station>1, all_converged==1, mean_attract=='constant') %>%
-  group_by(model,  correlation,  sat_level, mean_attract) %>%
-  mutate(Mean = mean(Rel_RMSE),
-         UCL = mean(Rel_RMSE)+(2/sqrt(length(Rel_RMSE)))*sd(Rel_RMSE),
-         LCL = mean(Rel_RMSE)-(2/sqrt(length(Rel_RMSE)))*sd(Rel_RMSE)) %>%
-  #UCL = quantile(Rel_Bias, prob=0.975),
-  #LCL = quantile(Rel_Bias, prob=0.025)) %>%
-  ggplot(aes(x=model, y=Mean, ymin=LCL, ymax=UCL, colour=model, group=model)) +
-  geom_errorbar(position = position_dodge(width=0.3)) +
-  geom_point(position = position_dodge(width=0.3)) +
-  facet_grid(correlation~sat_level) +
-  geom_hline(yintercept=0) +
-  ggtitle('Mean Squared Error in Relative Abundance Indices vs Method',
-          subtitle = 'Relative Abundance Constant Across Time \nColumns are degree of saturation,\nRows are correlation of target species\' abundance with saturation events') +
-  ylab('Mean Squared Error in Relative Abundance Index') +
-  xlab('Model') +  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))
-
-Results %>%
-  group_by(sat_level, mean_attract, correlation, nsim) %>%
-  mutate(all_converged = mean(Converge)) %>%
-  ungroup() %>%
-  filter(Station>1, all_converged==1, mean_attract=='constant', model!='naive') %>%
-  group_by(model,  correlation,  sat_level, mean_attract) %>%
-  mutate(Mean = mean(Rel_RMSE),
-         UCL = mean(Rel_RMSE)+(2/sqrt(length(Rel_RMSE)))*sd(Rel_RMSE),
-         LCL = mean(Rel_RMSE)-(2/sqrt(length(Rel_RMSE)))*sd(Rel_RMSE)) %>%
-  #UCL = quantile(Rel_Bias, prob=0.975),
-  #LCL = quantile(Rel_Bias, prob=0.025)) %>%
-  ggplot(aes(x=model, y=Mean, ymin=LCL, ymax=UCL, colour=model, group=model)) +
-  geom_errorbar(position = position_dodge(width=0.3)) +
-  geom_point(position = position_dodge(width=0.3)) +
-  facet_grid(correlation~sat_level) +
-  geom_hline(yintercept=0) +
-  ggtitle('Mean Squared Error in Relative Abundance Indices vs Adjusted Methods',
-          subtitle = 'Relative Abundance Constant Across Time \nColumns are degree of saturation,\nRows are correlation of target species\' abundance with saturation events') +
-  ylab('Mean Squared Error in Relative Abundance Index') +
-  xlab('Model') +  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))
-
-# Again for just the censored models
-Results %>%
-  group_by(sat_level, mean_attract, correlation, nsim) %>%
-  mutate(all_converged = mean(Converge)) %>%
-  ungroup() %>%
-  filter(Station>1, all_converged==1, mean_attract=='constant', !(model %in% c('adjust','naive'))) %>%
-  group_by(model,  correlation,  sat_level, mean_attract) %>%
-  mutate(Mean = mean(Rel_RMSE),
-         UCL = mean(Rel_RMSE)+(2/sqrt(length(Rel_RMSE)))*sd(Rel_RMSE),
-         LCL = mean(Rel_RMSE)-(2/sqrt(length(Rel_RMSE)))*sd(Rel_RMSE)) %>%
-  #UCL = quantile(Rel_Bias, prob=0.975),
-  #LCL = quantile(Rel_Bias, prob=0.025)) %>%
-  ggplot(aes(x=model, y=Mean, ymin=LCL, ymax=UCL, colour=model, group=model)) +
-  geom_errorbar(position = position_dodge(width=0.3)) +
-  geom_point(position = position_dodge(width=0.3)) +
-  facet_grid(correlation~sat_level) +
-  geom_hline(yintercept=0) +
-  ggtitle('Mean Squared Error in Relative Abundance Indices vs Adjusted Methods',
-          subtitle = 'Relative Abundance Constant Across Time \nColumns are degree of saturation,\nRows are correlation of target species\' abundance with saturation events') +
-  ylab('Mean Squared Error in Relative Abundance Index') +
-  xlab('Model') +  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))
-
-Results %>%
-  group_by(sat_level, mean_attract, correlation, nsim) %>%
-  mutate(all_converged = mean(Converge)) %>%
-  ungroup() %>%
-  filter(Station>1, all_converged==1, mean_attract=='linear') %>%
-  group_by(model,  correlation,  sat_level, mean_attract) %>%
-  mutate(Mean = mean(Rel_RMSE),
-         UCL = mean(Rel_RMSE)+(2/sqrt(length(Rel_RMSE)))*sd(Rel_RMSE),
-         LCL = mean(Rel_RMSE)-(2/sqrt(length(Rel_RMSE)))*sd(Rel_RMSE)) %>%
-  #UCL = quantile(Rel_Bias, prob=0.975),
-  #LCL = quantile(Rel_Bias, prob=0.025)) %>%
-  ggplot(aes(x=model, y=Mean, ymin=LCL, ymax=UCL, colour=model, group=model)) +
-  geom_errorbar(position = position_dodge(width=0.3)) +
-  geom_point(position = position_dodge(width=0.3)) +
-  facet_grid(correlation~sat_level) +
-  geom_hline(yintercept=0) +
-  ggtitle('Mean Squared Error in Relative Abundance Indices vs Method',
-          subtitle = 'Relative Abundance Increasing Across Time \nColumns are degree of saturation,\nRows are correlation of target species\' abundance with saturation events') +
-  ylab('Mean Squared Error in Relative Abundance Index') +
-  xlab('Model') +  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))
-
-Results %>%
-  group_by(sat_level, mean_attract, correlation, nsim) %>%
-  mutate(all_converged = mean(Converge)) %>%
-  ungroup() %>%
-  filter(Station>1, all_converged==1, mean_attract=='linear', model!='naive') %>%
-  group_by(model,  correlation,  sat_level, mean_attract) %>%
-  mutate(Mean = mean(Rel_RMSE),
-         UCL = mean(Rel_RMSE)+(2/sqrt(length(Rel_RMSE)))*sd(Rel_RMSE),
-         LCL = mean(Rel_RMSE)-(2/sqrt(length(Rel_RMSE)))*sd(Rel_RMSE)) %>%
-  #UCL = quantile(Rel_Bias, prob=0.975),
-  #LCL = quantile(Rel_Bias, prob=0.025)) %>%
-  ggplot(aes(x=model, y=Mean, ymin=LCL, ymax=UCL, colour=model, group=model)) +
-  geom_errorbar(position = position_dodge(width=0.3)) +
-  geom_point(position = position_dodge(width=0.3)) +
-  facet_grid(correlation~sat_level) +
-  geom_hline(yintercept=0) +
-  ggtitle('Mean Squared Error in Relative Abundance Indices vs Adjusted Methods',
-          subtitle = 'Relative Abundance Increasing Across Time \nColumns are degree of saturation,\nRows are correlation of target species\' abundance with saturation events') +
-  ylab('Mean Squared Error in Relative Abundance Index') +
-  xlab('Model') +  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))
-
-# Again for just the censored models
-Results %>%
-  group_by(sat_level, mean_attract, correlation, nsim) %>%
-  mutate(all_converged = mean(Converge)) %>%
-  ungroup() %>%
-  filter(Station>1, all_converged==1, mean_attract=='linear', !(model %in% c('adjust','naive'))) %>%
-  group_by(model,  correlation,  sat_level, mean_attract) %>%
-  mutate(Mean = mean(Rel_RMSE),
-         UCL = mean(Rel_RMSE)+(2/sqrt(length(Rel_RMSE)))*sd(Rel_RMSE),
-         LCL = mean(Rel_RMSE)-(2/sqrt(length(Rel_RMSE)))*sd(Rel_RMSE)) %>%
-  #UCL = quantile(Rel_Bias, prob=0.975),
-  #LCL = quantile(Rel_Bias, prob=0.025)) %>%
-  ggplot(aes(x=model, y=Mean, ymin=LCL, ymax=UCL, colour=model, group=model)) +
-  geom_errorbar(position = position_dodge(width=0.3)) +
-  geom_point(position = position_dodge(width=0.3)) +
-  facet_grid(correlation~sat_level) +
-  geom_hline(yintercept=0) +
-  ggtitle('Mean Squared Error in Relative Abundance Indices vs Adjusted Methods',
-          subtitle = 'Relative Abundance Constant Across Time \nColumns are degree of saturation,\nRows are correlation of target species\' abundance with saturation events') +
-  ylab('Mean Squared Error in Relative Abundance Index') +
-  xlab('Model') +  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))
-
-## Plot all the MSE results together
-Results %>%
-  group_by(sat_level, mean_attract, correlation, nsim) %>%
-  mutate(all_converged = mean(Converge)) %>%
-  ungroup() %>%
-  filter(Station>1, all_converged==1,  !(model %in% c('naive'))) %>%
-  group_by(model,  correlation,  sat_level, mean_attract) %>%
-  mutate(Mean = mean(Rel_RMSE),
-         UCL = mean(Rel_RMSE)+(2/sqrt(length(Rel_RMSE)))*sd(Rel_RMSE),
-         LCL = mean(Rel_RMSE)-(2/sqrt(length(Rel_RMSE)))*sd(Rel_RMSE)) %>%
-  #UCL = quantile(Rel_Bias, prob=0.975),
-  #LCL = quantile(Rel_Bias, prob=0.025)) %>%
-  ggplot(aes(x=model, y=Mean, ymin=LCL, ymax=UCL, colour=model, group=model)) +
-  geom_errorbar(position = position_dodge(width=0.3)) +
-  geom_point(position = position_dodge(width=0.3)) +
-  facet_grid(sat_level + mean_attract ~ correlation, scales='free_y') +
-  geom_hline(yintercept=0) +
-  ggtitle('Mean Squared Error in Relative Abundance Indices vs Adjusted Methods',
-          subtitle = 'Relative Abundance Constant Across Time \nRows are degree of saturation,\nColumns are correlation of target species\' abundance with saturation events') +
-  ylab('Mean Squared Error in Relative Abundance Index') +
-  xlab('Model') +  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))
-
-Results %>%
-  group_by(sat_level, mean_attract, correlation, nsim) %>%
-  mutate(all_converged = mean(Converge)) %>%
-  ungroup() %>%
-  filter(Station>1, all_converged==1) %>%
-  group_by(model,  correlation,  sat_level, mean_attract) %>%
-  mutate(Mean = mean(Rel_RMSE),
-         UCL = mean(Rel_RMSE)+(2/sqrt(length(Rel_RMSE)))*sd(Rel_RMSE),
-         LCL = mean(Rel_RMSE)-(2/sqrt(length(Rel_RMSE)))*sd(Rel_RMSE)) %>%
-  #UCL = quantile(Rel_Bias, prob=0.975),
-  #LCL = quantile(Rel_Bias, prob=0.025)) %>%
-  ggplot(aes(x=model, y=Mean, ymin=LCL, ymax=UCL, colour=model, group=model)) +
-  geom_errorbar(position = position_dodge(width=0.3)) +
-  geom_point(position = position_dodge(width=0.3)) +
-  facet_grid(sat_level + mean_attract ~ correlation, scales='free_y') +
-  geom_hline(yintercept=0) +
-  ggtitle('Mean Squared Error in Relative Abundance Indices vs Adjusted Methods',
-          subtitle = 'Relative Abundance Constant Across Time \nRows are degree of saturation,\nColumns are correlation of target species\' abundance with saturation events') +
-  ylab('Mean Squared Error in Relative Abundance Index') +
-  xlab('Model') +  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))
-
-# Results %>%
-#   group_by(sat_level, mean_attract, correlation, nsim) %>%
-#   mutate(all_converged = mean(Converge)) %>%
-#   ungroup() %>%
-#   filter(Station>1, all_converged==1, model!='naive') %>%
-#   group_by(model,  correlation,  sat_level, mean_attract) %>%
-#   mutate(Mean = mean(Rel_RMSE),
-#          UCL = mean(Rel_RMSE)+(2/sqrt(length(Rel_RMSE)))*sd(Rel_RMSE),
-#          LCL = mean(Rel_RMSE)-(2/sqrt(length(Rel_RMSE)))*sd(Rel_RMSE)) %>%
-#   #UCL = quantile(Rel_Bias, prob=0.975),
-#   #LCL = quantile(Rel_Bias, prob=0.025)) %>%
-#   ggplot(aes(x=model, y=Mean, ymin=LCL, ymax=UCL, colour=model, group=model)) +
-#   geom_errorbar(position = position_dodge(width=0.3)) +
-#   geom_point(position = position_dodge(width=0.3)) +
-#   facet_grid(correlation~sat_level + mean_attract) +
-#   geom_hline(yintercept=0) +
-#   ggtitle('Mean Squared Error in Relative Abundance Indices vs Adjusted Methods',
-#           subtitle = 'Columns are degree of saturation and trend in relative abundance,\nRows are correlation of target species\' abundance with saturation events') +
-#   ylab('Mean Squared Error in Relative Abundance Index') +
-#   xlab('Model')
-
-# Results %>%
-#   group_by(sat_level, mean_attract, correlation, nsim) %>%
-#   mutate(all_converged = mean(Converge)) %>%
-#   ungroup() %>%
-#   filter(mean_attract=='constant', Station>1, all_converged==1) %>%
-#   group_by(model, correlation,  sat_level, mean_attract) %>%
-#   mutate(Coverage_Mean = mean(Rel_Coverage),
-#          UCL=mean(Rel_Coverage)+(2/sqrt(length(Rel_Coverage)))*sqrt(mean(Rel_Coverage)*(1-mean(Rel_Coverage))),
-#          LCL=mean(Rel_Coverage)-(2/sqrt(length(Rel_Coverage)))*sqrt(mean(Rel_Coverage)*(1-mean(Rel_Coverage)))) %>%
-#   ggplot(aes(x=model, y=Coverage_Mean, colour=model, group=model,
-#              ymax=UCL, ymin=LCL)) +
-#   geom_errorbar(position = position_dodge(width=0.3)) +
-#   facet_grid(correlation ~sat_level) +
-#   geom_hline(yintercept = 0.95) +
-#   ggtitle('Coverage of Intervals of Relative Abundance Indices vs Method',
-#           subtitle = 'True abundance constant across time \nColumns are degree of saturation,\nRows are abilities to locate baited hooks') +
-#   ylab('Coverage of Intervals of Relative Abundance') +
-#   xlab('Model')
-
-# Results %>%
-#   group_by(sat_level, mean_attract, correlation, nsim) %>%
-#   mutate(all_converged = mean(Converge)) %>%
-#   ungroup() %>%
-#   filter(Station>1, all_converged==1) %>%
-#   group_by(model, correlation,  sat_level, mean_attract) %>%
-#   mutate(Coverage_Mean = mean(Rel_Coverage),
-#          UCL=mean(Rel_Coverage)+(2/sqrt(length(Rel_Coverage)))*sqrt(mean(Rel_Coverage)*(1-mean(Rel_Coverage))),
-#          LCL=mean(Rel_Coverage)-(2/sqrt(length(Rel_Coverage)))*sqrt(mean(Rel_Coverage)*(1-mean(Rel_Coverage)))) %>%
-#   ggplot(aes(x=model, y=Coverage_Mean, colour=model, group=model,
-#              ymax=UCL, ymin=LCL)) +
-#   geom_errorbar(position = position_dodge(width=0.3)) +
-#   facet_grid(correlation ~sat_level + mean_attract) +
-#   geom_hline(yintercept = 0.95) +
-#   ggtitle('Coverage of Intervals of Relative Abundance Indices vs Method',
-#           subtitle = 'Columns are degree of saturation and trend in relative abundance,\nRows are correlation of target species\' abundance with saturation events') +
-#   ylab('Coverage of intervals of Relative Abundance') +
-#   xlab('Model')
-
-# Results %>%
-#   group_by(sat_level, mean_attract, correlation, nsim) %>%
-#   mutate(all_converged = mean(Converge)) %>%
-#   ungroup() %>%
-#   filter(mean_attract=='constant', Station>1, all_converged==1) %>%
-#   group_by(model, Station, correlation,  sat_level, mean_attract) %>%
-#   mutate(Coverage_Mean = mean(Rel_Coverage),
-#          UCL=mean(Rel_Coverage)+(2/sqrt(length(Rel_Coverage)))*sqrt(mean(Rel_Coverage)*(1-mean(Rel_Coverage))),
-#          LCL=mean(Rel_Coverage)-(2/sqrt(length(Rel_Coverage)))*sqrt(mean(Rel_Coverage)*(1-mean(Rel_Coverage)))) %>%
-#   ggplot(aes(x=Station, y=Coverage_Mean, colour=model, group=model,
-#              ymax=UCL, ymin=LCL)) +
-#   geom_errorbar(position = position_dodge(width=0.3)) +
-#   facet_grid(correlation ~sat_level) +
-#   geom_hline(yintercept = 0.95) +
-#   ggtitle('Coverage of Intervals of Relative Abundance Indices vs Method',
-#           subtitle = 'True abundance constant across time \nColumns are degree of saturation,\nRows are abilities to locate baited hooks') +
-#   ylab('Coverage of Intervals of Relative Abundance') +
-#   xlab('Year')
-
-Results %>%
-  group_by(sat_level, mean_attract, correlation, nsim) %>%
-  mutate(all_converged = mean(Converge)) %>%
-  ungroup() %>%
-  filter(Station>1, all_converged==1) %>%
-  group_by(model, Station, correlation,  sat_level, mean_attract) %>%
-  mutate(Coverage_Mean = mean(Rel_Coverage),
-         UCL=mean(Rel_Coverage)+(2/sqrt(length(Rel_Coverage)))*sqrt(mean(Rel_Coverage)*(1-mean(Rel_Coverage))),
-         LCL=mean(Rel_Coverage)-(2/sqrt(length(Rel_Coverage)))*sqrt(mean(Rel_Coverage)*(1-mean(Rel_Coverage)))) %>%
-  ggplot(aes(x=Station, y=Coverage_Mean, colour=model, group=model,
-             ymax=UCL, ymin=LCL)) +
-  geom_errorbar(position = position_dodge(width=0.3)) +
-  facet_grid(correlation ~sat_level + mean_attract) +
-  geom_hline(yintercept = 0.95) +
-  ggtitle('Coverage of Intervals of Relative Abundance Indices vs Method',
-          subtitle = 'Columns are degree of saturation and trend in relative abundance,\nRows are correlation of target species\' abundance with saturation events') +
-  ylab('Coverage of intervals of Relative Abundance') +
-  xlab('Year')
-
-Results %>%
-  group_by(sat_level, mean_attract, correlation, nsim) %>%
-  mutate(all_converged = mean(Converge)) %>%
-  ungroup() %>%
-  filter(Station>1, all_converged==1) %>%
-  group_by(model, correlation,  sat_level, mean_attract) %>%
-  mutate(Coverage_Mean = mean(Rel_Coverage),
-         UCL=mean(Rel_Coverage)+(2/sqrt(length(Rel_Coverage)))*sqrt(mean(Rel_Coverage)*(1-mean(Rel_Coverage))),
-         LCL=mean(Rel_Coverage)-(2/sqrt(length(Rel_Coverage)))*sqrt(mean(Rel_Coverage)*(1-mean(Rel_Coverage)))) %>%
-  ggplot(aes(x=model, y=Coverage_Mean, colour=model, group=model,
-             ymax=UCL, ymin=LCL)) +
-  geom_errorbar(position = position_dodge(width=0.3)) +
-  facet_grid(sat_level + mean_attract ~ correlation) +
-  geom_hline(yintercept = 0.95) +
-  ggtitle('Coverage of Intervals of Relative Abundance Indices vs Method',
-          subtitle = 'Rows are degree of saturation and trend in relative abundance,\nColumns are correlation of target species\' abundance with saturation events') +
-  ylab('Coverage of intervals of Relative Abundance') +
-  xlab('Model') +  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))
-
-# Results %>%
-#   group_by(sat_level, mean_attract, correlation, nsim) %>%
-#   mutate(all_converged = mean(Converge)) %>%
-#   ungroup() %>%
-#   filter(mean_attract=='constant', Station>1, all_converged==1) %>%
-#   group_by(model, correlation,  sat_level, mean_attract) %>%
-#   mutate(Mean = median(Bias),
-#          UCL = median(Bias)+(2/sqrt(length(Bias)))*mad(Bias),
-#          LCL = median(Bias)-(2/sqrt(length(Bias)))*mad(Bias)) %>%
-#   ggplot(aes(x=model, y=Mean, ymin=LCL, ymax=UCL, colour=model, group=model)) +
-#   geom_errorbar(position = position_dodge(width=0.3)) +
-#   geom_point(position = position_dodge(width=0.3)) +
-#   facet_grid(correlation ~sat_level) +
-#   geom_hline(yintercept=0)
-
-Results %>%
-  group_by(sat_level, mean_attract, correlation, nsim) %>%
-  mutate(all_converged = mean(Converge)) %>%
-  ungroup() %>%
-  filter(Station>1, all_converged==1) %>%
-  group_by(model, correlation,  sat_level, mean_attract) %>%
-  mutate(Mean = median(Bias),
-         UCL = median(Bias)+(2/sqrt(length(Bias)))*mad(Bias),
-         LCL = median(Bias)-(2/sqrt(length(Bias)))*mad(Bias)) %>%
-  ggplot(aes(x=model, y=Mean, ymin=LCL, ymax=UCL, colour=model, group=model)) +
-  geom_errorbar(position = position_dodge(width=0.3)) +
-  geom_point(position = position_dodge(width=0.3)) +
-  facet_grid(correlation ~sat_level + mean_attract) +
-  geom_hline(yintercept=0)
-
-# Just for the censored models
-Results %>%
-  group_by(sat_level, mean_attract, correlation, nsim) %>%
-  mutate(all_converged = mean(Converge)) %>%
-  ungroup() %>%
-  filter(Station>1, all_converged==1, !(model %in% c('adjust','naive'))) %>%
-  group_by(model, correlation,  sat_level, mean_attract) %>%
-  mutate(Mean = median(Bias),
-         UCL = median(Bias)+(2/sqrt(length(Bias)))*mad(Bias),
-         LCL = median(Bias)-(2/sqrt(length(Bias)))*mad(Bias)) %>%
-  ggplot(aes(x=model, y=Mean, ymin=LCL, ymax=UCL, colour=model, group=model)) +
-  geom_errorbar(position = position_dodge(width=0.3)) +
-  geom_point(position = position_dodge(width=0.3)) +
-  facet_grid(correlation ~sat_level + mean_attract) +
-  geom_hline(yintercept=0)
-
-# Results %>%
-#   group_by(sat_level, mean_attract, correlation, nsim) %>%
-#   mutate(all_converged = mean(Converge)) %>%
-#   ungroup() %>%
-#   filter(mean_attract=='constant', Station>1, all_converged==1) %>%
-#   group_by(model, correlation,  sat_level, mean_attract) %>%
-#   mutate(Coverage_Mean = mean(Coverage),
-#          UCL=mean(Coverage)+(2/sqrt(length(Coverage)))*sqrt(mean(Coverage)*(1-mean(Coverage))),
-#          LCL=mean(Coverage)-(2/sqrt(length(Coverage)))*sqrt(mean(Coverage)*(1-mean(Coverage)))) %>%
-#   ggplot(aes(x=model, y=Coverage_Mean, colour=model, group=model,
-#              ymax=UCL, ymin=LCL)) +
-#   geom_errorbar(position = position_dodge(width=0.3)) +
-#   facet_grid(correlation ~sat_level) +
-#   geom_hline(yintercept = 0.95)
-
-Results %>%
-  group_by(sat_level, mean_attract, correlation, nsim) %>%
-  mutate(all_converged = mean(Converge)) %>%
-  ungroup() %>%
-  filter(Station>1, all_converged==1) %>%
-  group_by(model, correlation,  sat_level, mean_attract) %>%
-  mutate(Coverage_Mean = mean(Coverage),
-         UCL=mean(Coverage)+(2/sqrt(length(Coverage)))*sqrt(mean(Coverage)*(1-mean(Coverage))),
-         LCL=mean(Coverage)-(2/sqrt(length(Coverage)))*sqrt(mean(Coverage)*(1-mean(Coverage)))) %>%
-  ggplot(aes(x=model, y=Coverage_Mean, colour=model, group=model,
-             ymax=UCL, ymin=LCL)) +
-  geom_errorbar(position = position_dodge(width=0.3)) +
-  facet_grid(correlation ~sat_level + mean_attract) +
-  geom_hline(yintercept = 0.95)
-
-# Results %>%
-#   filter(mean_attract=='constant', Station>1, model!='naive') %>%
-#   group_by(model, correlation,  sat_level, mean_attract) %>%
-#   mutate(Converge_Mean = mean(Converge),
-#          UCL=mean(Converge)+(2/sqrt(length(Converge)))*sqrt(mean(Converge)*(1-mean(Converge))),
-#          LCL=mean(Converge)-(2/sqrt(length(Converge)))*sqrt(mean(Converge)*(1-mean(Converge)))) %>%
-#   ggplot(aes(x=model, y=Converge_Mean, ymin=LCL, ymax=UCL, colour=model, group=model)) +
-#   geom_errorbar(position = position_dodge(width=0.3)) +
-#   geom_point(position = position_dodge(width=0.3)) +
-#   facet_grid(correlation ~sat_level) +
-#   ylab('Convergence Proportion')
-
+    theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+          panel.background = element_blank(), axis.line = element_blank(),
+          legend.position = 'left', strip.text.y = element_blank()) +
+    scale_color_viridis_d(labels=c('CPUE','ICR','Censored 1','Censored 1 Q','Censored 0.95 Q')) +
+    scale_shape_manual(labels=c('CPUE','ICR','Censored 1','Censored 1 Q','Censored 0.95 Q'),
+                       values=c('circle','triangle','cross','plus','square')) +
+    guides(color=guide_legend(override.aes=list(fill=NA)))+ labs(colour='Method', shape='Method'),
+  layout = matrix(c(rep(NA,32),rep(1,468),rep(2,2000)), nrow = 500, ncol = 5, byrow = F))

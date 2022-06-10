@@ -8,6 +8,9 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(mgcv)
+library(hookCompetition)
 ```
 
 ## Case Study
@@ -17,8 +20,7 @@ The Rmarkdown document runs the analysis used in the paper (LINK IT HERE).
 First, we load in the data
 
 ```{r loaddata, message=F, warning=F, cache=F}
-data <- hookCompetition::read_Data_hookcomp(
-  species_vec = c("yelloweye rockfish",
+species_vec = c("yelloweye rockfish",
             "arrowtooth flounder",
             "lingcod",
             "north pacific spiny dogfish",
@@ -28,8 +30,7 @@ data <- hookCompetition::read_Data_hookcomp(
             "sablefish",
             "big skate",
             "longnose skate",
-            "shortspine thornyhead",
-            "petrale sole"),
+            "shortspine thornyhead")
   simple_species_vec = c("yelloweye",
             "arrowtooth",
             "lingcod",
@@ -40,9 +41,12 @@ data <- hookCompetition::read_Data_hookcomp(
             "sablefish",
             "bigskate",
             "longnose",
-            "shortspine",
-            "petrale"),
-  at_PBS = T,
+            "shortspine")
+
+data <- hookCompetition::read_Data_hookcomp(
+  species_vec = species_vec,
+  simple_species_vec = simple_species_vec,
+  at_PBS = F,
   data_wd = './',
   min_dist = 50,
   min_dist_to_boundary = 0,
@@ -54,63 +58,233 @@ list2env(data, globalenv())
 rm(data)
 ```
 
-We now fit all three indices to each of the species
+Next, we plot the observed catch counts $n_{i,t,k}$ vs the proportion of baits
+removed during each fishing event $p_{i,t,k}$, after controlling for the effects
+of year, and fishing station
 
-```{r model-based, cache=F, warning=T, message=T, eval=F}
-simple_species_vec = c("yelloweye",
-            "arrowtooth",
-            "lingcod",
-            "dogfish",
-            "cod",
-            "halibut",
-            "redbanded",
-            "sablefish",
-            "bigskate",
-            "longnose",
-            "shortspine",
-            "petrale")
+```{r choosing-pistar, cache=F, warning=F, message=F, eval=T}
+Reduced_data_sp <- Reduced_data_sp %>% filter(year >= 1998)
 
+Reduced_data_sp$year <- Reduced_data_sp$year - min(Reduced_data_sp$year) + 1
+# Restrict ourselves to the usable data
+Reduced_data_sp <- Reduced_data_sp[Reduced_data_sp$usable=='Y',]
+# Restrict ourselves to the 'standard stations'
+Reduced_data_sp <- Reduced_data_sp[Reduced_data_sp$standard=='Y',]
+Reduced_data_sp$region_INLA <- 1 # Estimate coastwide indices only
+survey_boundaries <- sf::st_as_sfc(sf::st_bbox(Reduced_data_sp))
+Reduced_data_sp$logeffSkateIPHC <- log(Reduced_data_sp$effSkateIPHC)
+Reduced_data_sp$year_fac <- factor(Reduced_data_sp$year)
+Reduced_data_sp$station <- factor(Reduced_data_sp$station)
+
+# Create a list for storing the results
+exploratory_results <-
+    expand.grid(Species=species_vec,
+               Comparison = c('p=1 vs p=0.95','p=1 vs p=0.85'),
+               Percent_Decline = 0,
+               Significant_diff_0 = 0,
+               Significant_higher_10perc = 0
+    )
+
+propsat_results <-
+    expand.grid(Species=species_vec,
+               Prop_Sat = seq(from=0.6,to=1, by=0.005),
+               Mean = 0,
+               UCL = 0,
+               LCL = 0
+    )
+
+effskate_results <-
+    expand.grid(Species=species_vec,
+               logeffSkateIPHC = seq(from=log(min(Reduced_data_sp$effSkateIPHC)),
+                              to=log(max(Reduced_data_sp$effSkateIPHC)), 
+                              length.out=100),
+               Mean = 0,
+               UCL = 0,
+               LCL = 0
+    )
+
+ind_100 <- which(seq(from=0.6,to=1, by=0.005) == 1)
+ind_95 <- which(seq(from=0.6,to=1, by=0.005) == 0.95)
+ind_85 <- which(seq(from=0.6,to=1, by=0.005) == 0.85)
+
+count <- 1
+for(i in simple_species_vec)
+{
+  
+  mod <-
+    mgcv::gam(
+      formula=as.formula(paste0(paste0('N_it_',i),' ~ -1 + s(prop_removed) + offset(logeffSkateIPHC) + year_fac + s(station, bs="re")')),
+      family='nb',
+      data=Reduced_data_sp
+    )
+  
+  mod2 <-
+    mgcv::gam(
+      formula=as.formula(paste0(paste0('N_it_',i),' ~ -1 + s(logeffSkateIPHC, k=4) + year_fac + s(station, bs="re")')),
+      family='nb',
+      data=Reduced_data_sp
+    )
+  
+  pred_df <-
+    expand.grid(prop_removed=seq(from=0.6,to=1, by=0.005),
+                logeffSkateIPHC=0,
+                year_fac=1,
+                station=1)
+  
+  pred_df2 <-
+    expand.grid(logeffSkateIPHC = seq(from=log(min(Reduced_data_sp$effSkateIPHC)),
+                              to=log(max(Reduced_data_sp$effSkateIPHC)), 
+                              length.out=100),
+                year_fac=1,
+                station=1)
+  
+  pred_mod <-
+    predict.gam(
+      mod, 
+      newdata = pred_df,
+      se.fit = T,
+      type = 'terms',
+      terms='s(prop_removed)'
+    )
+  
+  pred_mod2 <-
+    predict.gam(
+      mod2, 
+      newdata = pred_df2,
+      se.fit = T,
+      type = 'terms',
+      terms='s(logeffSkateIPHC)'
+    )
+  
+  exploratory_results[
+    exploratory_results$Species==species_vec[count],
+    c('Percent_Decline','Significant_diff_0','Significant_higher_10perc')
+  ] <-
+    c(1 - exp(pred_mod$fit[c(ind_100,ind_100)] - pred_mod$fit[c(ind_95,ind_85)]),
+      ifelse(
+                 1.96*sqrt(pred_mod$se.fit[c(ind_100,ind_100)]^2 + pred_mod$se.fit[c(ind_95,ind_85)]^2) <=
+                   abs(pred_mod$fit[c(ind_100,ind_100)] - pred_mod$fit[c(ind_95,ind_85)]),
+                 1,0),
+      ifelse(
+                 1.96*sqrt(pred_mod$se.fit[c(ind_100,ind_100)]^2 + pred_mod$se.fit[c(ind_95,ind_85)]^2) <=
+                   abs(pred_mod$fit[c(ind_100,ind_100)] - pred_mod$fit[c(ind_95,ind_85)] - log(0.9)) ,
+                 1,0)
+      )
+  
+  propsat_results[
+    propsat_results$Species==species_vec[count],
+    c('Mean','LCL','UCL')
+  ] <-
+    c(pred_mod$fit,
+      pred_mod$fit - 1.96*pred_mod$se.fit,
+      pred_mod$fit + 1.96*pred_mod$se.fit
+      )
+  
+  effskate_results[
+    effskate_results$Species==species_vec[count],
+    c('Mean','LCL','UCL')
+  ] <-
+    c(pred_mod2$fit,
+      pred_mod2$fit - 1.96*pred_mod2$se.fit,
+      pred_mod2$fit + 1.96*pred_mod2$se.fit
+      )
+
+print(paste0('Finished processing species number ',count,' out of ',length(simple_species_vec)))
+
+  count <- count + 1
+}
+
+exploratory_results
+
+propsat_results %>%
+  mutate(Species = str_to_title(Species),
+         P_hat_star = ifelse(Species %in% c('north pacific spiny dogfish', 'shortspine thornyhead'), 1,
+         ifelse(Species %in% c('redbanded rockfish', 'lingcod'), 0.85, 0.95))                   ) %>%
+  ggplot(aes(x=Prop_Sat, y=Mean, ymax=UCL, ymin=LCL, colour=Species, fill=Species)) +
+  geom_line() + geom_ribbon(alpha=0.2) +
+  geom_vline(mapping=aes(xintercept = P_hat_star), data=
+               propsat_results %>%
+  mutate(
+         P_hat_star = ifelse(Species %in% c('north pacific spiny dogfish', 'shortspine thornyhead'), 1,
+         ifelse(Species %in% c('redbanded rockfish', 'lingcod'), 0.85, 0.95)),
+         
+  Species = str_to_title(Species))
+               ) + #0.95) +
+  facet_wrap(~Species, nrow=4, ncol=3) +
+  theme(legend.position = 'none') +
+  xlab('Proportion of baits removed') +
+  ylab('Model-estimated residual effect of hook competition on log mean catch count') #+
+  #ggtitle('Estimated change in log mean catch count vs. proportion of baits removed',
+  #        subtitle = 'Mean and 95% confidence intervals for the penalized spline #shown')
+
+effskate_results %>%
+  mutate(Species = str_to_title(Species)) %>%
+  group_by(Species) %>%
+  mutate(UCL=UCL,
+         LCL=LCL,
+         Mean=Mean) %>%
+  ggplot(aes(x=logeffSkateIPHC, y=Mean, ymax=UCL, ymin=LCL, colour=Species, fill=Species)) +
+  geom_line() + geom_ribbon(alpha=0.2) +
+  #geom_abline(intercept = 0, slope = 1) +
+  geom_smooth(formula=y~1+offset(x), method='lm', colour='black', se=F)+
+  facet_wrap(~Species, nrow=4, ncol=3, scales = 'free') +
+  theme(legend.position = 'none') +
+  xlab('Log of the effective skate') +
+  ylab('Model-estimated residual effect of effective skate on log mean catch count') #+
+  #ggtitle('Estimated change in log mean catch count vs. log effective skate',
+  #        subtitle = 'Mean and 95% confidence intervals for the penalized spline shown #\nDrawn is a fitted linear regression curve with free intercept and slope fixed at 1')
+
+```
+
+
+We now fit all three indices to each of the species and plot.
+
+```{r model-based, cache=F, warning=T, message=T, eval=T}
 # Create a list for storing the results
 results_list <- vector('list', length=length(simple_species_vec))
 names(results_list) <- simple_species_vec
 # create a character vector storing the convergence status of censored Poisson model
 censored_poisson_convergence <- 
   rep('right-censored', length(simple_species_vec))
+# Which values of hat{p_i^star} should be used for each species based on earlier plots?
+cprop_values <- c(0.95, 0.95, 0.85, 1, 0.95, 0.95, 0.85,0.95, 0.95, 0.95, 1)
 
-Reduced_data_sp$year <- Reduced_data_sp$year - min(Reduced_data_sp$year) + 1
+fit_mods <- F
 
-count <- 1
-for(i in simple_species_vec[-c(1:5)])
+if(fit_mods)
+{
+  count <- 1
+for(i in simple_species_vec)
 {
   CPUE_ind <-
-censored_index_fun_sdmTMB(
-  data=Reduced_data_sp, survey_boundaries=survey_boundaries, species=i, M=1000, return=T, ICR_adjust=F, cprop=1.1, keep=T, use_upper_bound=FALSE, upper_bound_quantile=1.1, plot=T, allyears=F, station_effects=T, seed=0, verbose=F, n_trajectories=0,
-  preserve_inter_regional_differences = T, smoothing_spline = F,
+hookCompetition::censored_index_fun_sdmTMB(
+  data=Reduced_data_sp, survey_boundaries=survey_boundaries, species=i, M=1000, return=T, ICR_adjust=F, cprop=1.1, keep=T, use_upper_bound=FALSE, upper_bound_quantile=1.1, plot=F, allyears=F, station_effects=T, seed=0, verbose=F, n_trajectories=0,
+  preserve_inter_regional_differences = F, time_effect = 'unstructured',
   twentyhook_adjust = F
 )
   if(!is.null(CPUE_ind$pred_overdisp))
   {
-    CPUE_ind$pred_overdisp$Species=i
+    CPUE_ind$pred_overdisp$Species=species_vec[count]
     CPUE_ind$pred_overdisp$Method='CPUE-based'
   }
 
 ICR_ind <-
-censored_index_fun_sdmTMB(
-  data=Reduced_data_sp, survey_boundaries=survey_boundaries, species=i, M=1000, return=T, ICR_adjust=T, cprop=1.1, keep=F, use_upper_bound=FALSE, upper_bound_quantile=1.1, plot=T, allyears=F, station_effects=T, seed=0, verbose=F, n_trajectories=0,
-  preserve_inter_regional_differences = T, smoothing_spline = F,
+hookCompetition::censored_index_fun_sdmTMB(
+  data=Reduced_data_sp, survey_boundaries=survey_boundaries, species=i, M=1000, return=T, ICR_adjust=T, cprop=1.1, keep=F, use_upper_bound=FALSE, upper_bound_quantile=1.1, plot=F, allyears=F, station_effects=T, seed=0, verbose=F, n_trajectories=0,
+  preserve_inter_regional_differences = F, time_effect = 'unstructured',
   twentyhook_adjust = F
 )
 if(!is.null(ICR_ind$pred_overdisp))
   {
-  ICR_ind$pred_overdisp$Species=i
+  ICR_ind$pred_overdisp$Species=species_vec[count]
   ICR_ind$pred_overdisp$Method='ICR-based'
   }
 
 # First try to fit the censored Poisson model without any upper bound 
 censored_ind <-
-censored_index_fun_sdmTMB(
-  data=Reduced_data_sp, survey_boundaries=survey_boundaries, species=i, M=1000, return=T, ICR_adjust=F, cprop=0.95, keep=F, use_upper_bound=FALSE, upper_bound_quantile=1.1, plot=T, allyears=F, station_effects=T, seed=0, verbose=F, n_trajectories=0, prev_fit =CPUE_ind$mod,
-  preserve_inter_regional_differences = T, smoothing_spline = F,
+hookCompetition::censored_index_fun_sdmTMB(
+  data=Reduced_data_sp, survey_boundaries=survey_boundaries, species=i, M=1000, return=T, ICR_adjust=F, cprop=cprop_values[count], keep=F, use_upper_bound=FALSE, upper_bound_quantile=1.1, plot=F, allyears=F, station_effects=T, seed=0, verbose=F, n_trajectories=0, prev_fit =CPUE_ind$mod,
+  preserve_inter_regional_differences = F, time_effect = 'unstructured',
   twentyhook_adjust = F
     )
   
@@ -118,9 +292,9 @@ censored_index_fun_sdmTMB(
 if(is.null(censored_ind$pred_overdisp))
 {
   censored_ind <-
-censored_index_fun_sdmTMB(
-  data=Reduced_data_sp, survey_boundaries=survey_boundaries, species=i, M=1000, return=T, ICR_adjust=F, cprop=0.95, keep=F, use_upper_bound=TRUE, upper_bound_quantile=0.95, plot=T, allyears=F, station_effects=T, seed=0, verbose=F, n_trajectories=0, prev_fit =CPUE_ind$mod,
-  preserve_inter_regional_differences = T, smoothing_spline = F,
+hookCompetition::censored_index_fun_sdmTMB(
+  data=Reduced_data_sp, survey_boundaries=survey_boundaries, species=i, M=1000, return=T, ICR_adjust=F, cprop=cprop_values[count], keep=F, use_upper_bound=TRUE, upper_bound_quantile=0.95, plot=F, allyears=F, station_effects=T, seed=0, verbose=F, n_trajectories=0, prev_fit =CPUE_ind$mod,
+  preserve_inter_regional_differences = F, time_effect = 'unstructured',
   twentyhook_adjust = F
     )
   censored_poisson_convergence[count] <-
@@ -129,9 +303,9 @@ censored_index_fun_sdmTMB(
   if(is.null(censored_ind$pred_overdisp))
   {
     censored_ind <-
-  censored_index_fun_sdmTMB(
-    data=Reduced_data_sp, survey_boundaries=survey_boundaries, species=i, M=1000, return=T, ICR_adjust=F, cprop=0.95, keep=F, use_upper_bound=TRUE, upper_bound_quantile=0.85, plot=T, allyears=F, station_effects=T, seed=0, verbose=F, n_trajectories=0, prev_fit =CPUE_ind$mod,
-  preserve_inter_regional_differences = T, smoothing_spline = F,
+  hookCompetition::censored_index_fun_sdmTMB(
+    data=Reduced_data_sp, survey_boundaries=survey_boundaries, species=i, M=1000, return=T, ICR_adjust=F, cprop=cprop_values[count], keep=F, use_upper_bound=TRUE, upper_bound_quantile=0.85, plot=F, allyears=F, station_effects=T, seed=0, verbose=F, n_trajectories=0, prev_fit =CPUE_ind$mod,
+  preserve_inter_regional_differences = F, time_effect = 'unstructured',
   twentyhook_adjust = F
     )
     censored_poisson_convergence[count] <-
@@ -140,7 +314,7 @@ censored_index_fun_sdmTMB(
 }
 if(!is.null(censored_ind$pred_overdisp))
   {
-  censored_ind$pred_overdisp$Species=i
+  censored_ind$pred_overdisp$Species=species_vec[count]
   censored_ind$pred_overdisp$Method='Censored'
   }
 
@@ -152,19 +326,355 @@ print(paste0('Finished processing species number ',count,' out of ',length(simpl
 
   count <- count + 1
 }
+}
 
+# Add some bootstrap indices too - since this is done in practice
+# Note that unlike the model-based approaches which can control for 
+# the effects of different stations being added and dropped each year
+# the bootstrapping approach is sensitive. Restrict the analysis to
+# Only consider the stations online for all 23 years.
+count <- 1
+for(i in simple_species_vec)
+{
+  Boot_ind <-
+hookCompetition:::bootstrap_index_fun(
+  data=Reduced_data_sp %>% 
+    group_by(station) %>%
+    mutate(N = n()) %>%
+    ungroup() %>%
+    filter(N==23), 
+  species=i, R=1000, return=T, ICR_adjust=F, plot=F,
+  ncpus = 6
+)
+  if(!is.null(Boot_ind))
+  {
+    Boot_ind$Species=species_vec[count]
+    Boot_ind$Method='Bootstrap CPUE'
+  }
+  
+  results_list[[count]] <- rbind(results_list[[count]],
+                               Boot_ind[,names(results_list[[count]])])
+  
+  print(paste0('Finished processing species number ',count,' out of ',length(simple_species_vec)))
+
+  count <- count + 1
+}
+
+if(!fit_mods)
+{
+  results_list <- 
+    readRDS(file='C:/Users/WATSONJOE/OneDrive - DFO-MPO/Documents/hookcompetition/Case Study/Case_Study_Models.rds')
+}
+
+# Plot the results
+results <- do.call('rbind',results_list)
+
+results %>%
+    filter(Species %in% c('arrowtooth flounder', 'sablefish', 'north pacific spiny dogfish'),
+           Method %in% c('Bootstrap CPUE', 'Censored')) %>%
+    full_join(sf::st_drop_geometry(Reduced_data_sp) %>%
+                  group_by(year) %>%
+                  summarize(Species='Proportion of Events with >85% Baits Removed',
+                            mean=mean(prop_removed>0.85),
+                            region='All',
+                            q0.975=NA, q0.025=NA, sd=NA, Method='Bootstrap CPUE') %>%
+                  mutate(year=factor(year)) %>%
+                  ungroup())%>%
+    full_join(sf::st_drop_geometry(Reduced_data_sp) %>%
+                  group_by(year) %>%
+                  summarize(Species='Proportion of Events with >95% Baits Removed',
+                            mean=mean(prop_removed>0.95),
+                            region='All',
+                            q0.975=NA, q0.025=NA, sd=NA, Method='Bootstrap CPUE') %>%
+                  mutate(year=factor(year)) %>%
+                  ungroup())%>%
+    full_join(sf::st_drop_geometry(Reduced_data_sp) %>%
+                  group_by(year) %>%
+                  summarize(Species='Proportion of Events with 100% Baits Removed',
+                            mean=mean(prop_removed==1),
+                            region='All',
+                            q0.975=NA, q0.025=NA, sd=NA, Method='Bootstrap CPUE') %>%
+                  mutate(year=factor(year)) %>%
+                  ungroup()) %>%
+    mutate(Species = str_to_title(Species),
+           Species = factor(Species, levels=c('Arrowtooth Flounder', 'Sablefish', 'North Pacific Spiny Dogfish','Proportion Of Events With >85% Baits Removed','Proportion Of Events With >95% Baits Removed','Proportion Of Events With 100% Baits Removed'), ordered = T),
+           year = as.numeric(year)+1997) %>%
+    ggplot(aes(x=year, y=mean, ymax=q0.975, ymin=q0.025, 
+               colour=Method, group=Method, shape=Method)) +
+    geom_point(position = position_dodge(width=0.7), size=2) + 
+    geom_errorbar(position = position_dodge(width=0.7)) +
+    facet_wrap(~Species, nrow=4, ncol=3, scales = 'free') +
+    theme(legend.position = 'left') +
+    xlab('Year') +
+    ylab('Estimated relative abundance or proportion of events') +
+    ggtitle('Relative abundance vs. year for competing estimators',
+            subtitle = 'Mean and 95% confidence intervals shown')
+
+results %>%
+    filter(Species %in% c('lingcod', 'arrowtooth flounder', 'north pacific spiny dogfish')) %>%
+    full_join(sf::st_drop_geometry(Reduced_data_sp) %>%
+                  group_by(year) %>%
+                  summarize(Method='Proportion Censored',
+                            Species='lingcod',
+                            mean=mean(prop_removed>0.85),
+                            region='All',
+                            q0.975=NA, q0.025=NA, sd=NA) %>%
+                  mutate(year=factor(year)) %>%
+                  ungroup())%>%
+    full_join(sf::st_drop_geometry(Reduced_data_sp) %>%
+                  group_by(year) %>%
+                  summarize(Method='Proportion Censored',
+                            Species = 'arrowtooth flounder',
+                            mean=mean(prop_removed>0.95),
+                            region='All',
+                            q0.975=NA, q0.025=NA, sd=NA) %>%
+                  mutate(year=factor(year)) %>%
+                  ungroup())%>%
+    full_join(sf::st_drop_geometry(Reduced_data_sp) %>%
+                  group_by(year) %>%
+                  summarize(Method='Proportion Censored',
+                            Species='north pacific spiny dogfish',
+                            mean=mean(prop_removed==1),
+                            region='All',
+                            q0.975=NA, q0.025=NA, sd=NA) %>%
+                  mutate(year=factor(year)) %>%
+                  ungroup()) %>%
+    mutate(Species = str_to_title(Species),
+           Species = factor(Species, levels=c('Lingcod', 'Arrowtooth Flounder', 'North Pacific Spiny Dogfish','Proportion Of Events With >85% Baits Removed','Proportion Of Events With >95% Baits Removed','Proportion Of Events With 100% Baits Removed'), ordered = T),
+           year = as.numeric(year)+1997,
+           Method = factor(Method, levels = c('Bootstrap CPUE', 'CPUE-based','ICR-based','Censored','Proportion Censored'), ordered = T)) %>%
+    ggplot(aes(x=year, y=mean, ymax=q0.975, ymin=q0.025, 
+               colour=Method, group=Method)) +
+    geom_point(position = position_dodge(width=0.7), size=2) + 
+    geom_errorbar(position = position_dodge(width=0.7)) +
+    facet_wrap(Species~Method, scales = 'free', nrow=3, ncol=5) +
+    theme(legend.position = 'none') +
+    xlab('Year') +
+    ylab('Estimated relative abundance or proportion of events') +
+    ggtitle('Relative abundance vs. year for competing estimators',
+            subtitle = 'Mean and 95% confidence intervals shown. Exploratory analysis has determined that a fishing event is censored if > 85%, \n> 95%, and 100% of baits have been removed for Lingcod, Arrowtooth Flounder, and Spiny Dogfish respectively.')
+
+results %>%
+    filter(Species %in% c('lingcod', 'arrowtooth flounder', 'north pacific spiny dogfish')) %>%
+    group_by(Species) %>%
+    mutate(min = 0, max = max(q0.975)+0.1) %>%
+    ungroup() %>%
+    full_join(sf::st_drop_geometry(Reduced_data_sp) %>%
+                  group_by(year) %>%
+                  summarize(Method='Proportion Censored',
+                            Species='lingcod',
+                            mean=mean(prop_removed>0.85),
+                            region='All',
+                            q0.975=NA, q0.025=NA, sd=NA, 
+                            max = 1, min = 0) %>%
+                  mutate(year=factor(year)) %>%
+                  ungroup())%>%
+    full_join(sf::st_drop_geometry(Reduced_data_sp) %>%
+                  group_by(year) %>%
+                  summarize(Method='Proportion Censored',
+                            Species = 'arrowtooth flounder',
+                            mean=mean(prop_removed>0.95),
+                            region='All',
+                            q0.975=NA, q0.025=NA, sd=NA, 
+                            max = 1, min = 0) %>%
+                  mutate(year=factor(year)) %>%
+                  ungroup())%>%
+    full_join(sf::st_drop_geometry(Reduced_data_sp) %>%
+                  group_by(year) %>%
+                  summarize(Method='Proportion Censored',
+                            Species='north pacific spiny dogfish',
+                            mean=mean(prop_removed==1),
+                            region='All',
+                            q0.975=NA, q0.025=NA, sd=NA, 
+                            max = 1, min = 0) %>%
+                  mutate(year=factor(year)) %>%
+                  ungroup()) %>%
+    mutate(Species = str_to_title(Species),
+           Species = factor(Species, levels=c('Lingcod', 'Arrowtooth Flounder', 'North Pacific Spiny Dogfish','Proportion Of Events With >85% Baits Removed','Proportion Of Events With >95% Baits Removed','Proportion Of Events With 100% Baits Removed'), ordered = T),
+           year = as.numeric(year)+1997,
+           Method = factor(Method, levels = c('Bootstrap CPUE', 'CPUE-based','ICR-based','Censored','Proportion Censored'), ordered = T)) %>%
+    ggplot(aes(x=year, y=mean, ymax=q0.975, ymin=q0.025, 
+               colour=Method, group=Method)) +
+    geom_point(position = position_dodge(width=0.7), size=2) + 
+    geom_errorbar(position = position_dodge(width=0.7)) +
+    facet_wrap(Species~Method, scales = 'free', nrow=3, ncol=5,
+               labeller = labeller(
+               Method=c(
+                 `Bootstrap CPUE` = 'Bootstrap CPUE',
+                 `CPUE-based` = 'CPUE',
+                 `ICR-based` = 'ICR',
+                 Censored = 'Censored',
+                 `Proportion Censored` = 'Proportion Censored'
+               )
+               )
+               ) +
+    geom_hline(mapping = aes(yintercept=max), colour='white', size=1e-3) +
+    geom_hline(mapping = aes(yintercept=min), colour='white', size=1e-3) +
+    scale_colour_viridis_d(begin=0, end=0.9, option='A') +
+    theme(legend.position = 'none') +
+    xlab('Year') +
+    ylab('Estimated relative abundance or proportion of events') #+
+    #ggtitle('Relative abundance vs. year for competing estimators',
+    #        subtitle = 'Mean and 95% confidence intervals shown. Exploratory analysis #has determined that a fishing event is censored if > 85%, \n> 95%, and 100% of baits #have been removed for Lingcod, Arrowtooth Flounder, and Spiny Dogfish respectively.')
+
+library(MASS)
+results %>%
+    filter(Species %in% species_vec[cprop_values==0.95],
+           Method %in% c('CPUE-based', 'Censored')) %>%
+    group_by(year, Species) %>%
+    summarise(Diff = 100*((mean[Method=='Censored']-mean[Method=='CPUE-based'])/mean[Method=='CPUE-based'])) %>%
+    ungroup() %>%
+    full_join(sf::st_drop_geometry(Reduced_data_sp) %>%
+                  group_by(year) %>%
+                  summarize(Prop_Removed_85=mean(prop_removed>0.85),
+                            Prop_Removed_95=mean(prop_removed>0.95),
+                            Prop_Removed_100=mean(prop_removed==1),
+                            region='All') %>%
+                  mutate(year=factor(year)) %>%
+                  ungroup()) %>%
+    mutate(Species = str_to_title(Species),
+           year = as.numeric(year)+1997) %>%
+    ggplot(aes(x=Prop_Removed_95, y=Diff, colour=Species, group=Species,
+               fill=Species)) +
+    # stat_smooth(method=function(formula,data,weights=weight) rlm(formula,
+    #                                                              data,
+    #                                                              weights=weight,
+    #                                                               method="MM"),
+    #             fullrange=TRUE, alpha=0.2) + 
+    geom_smooth(alpha=0.4) +
+    geom_point() +
+    geom_hline(yintercept = 0) +
+    geom_vline(xintercept = mean(Reduced_data_sp$prop_removed>0.95)) +
+    theme(legend.position = 'none') +
+    ylab('Percentage change in estimated relative abundance') +
+    xlab('Proportion of fishing events with > 95% baits removed') +
+    facet_wrap(~Species)
+    #ggtitle('Percentage Change in Relative Abundance Estimates vs. \nProportion of #Fishing Events with > 95% Baits Removed', subtitle = 'Percentage change is computed #for censored Poisson estimates \nrelative to CPUE-based estimates as baseline') + 
+
+results %>%
+    filter(Species %in% species_vec[cprop_values==0.85],
+           Method %in% c('CPUE-based', 'Censored')) %>%
+    group_by(year, Species) %>%
+    summarise(Diff = 100*((mean[Method=='Censored']-mean[Method=='CPUE-based'])/mean[Method=='CPUE-based'])) %>%
+    ungroup() %>%
+    full_join(sf::st_drop_geometry(Reduced_data_sp) %>%
+                  group_by(year) %>%
+                  summarize(Prop_Removed_85=mean(prop_removed>0.85),
+                            Prop_Removed_95=mean(prop_removed>0.95),
+                            Prop_Removed_100=mean(prop_removed==1),
+                            region='All') %>%
+                  mutate(year=factor(year)) %>%
+                  ungroup()) %>%
+    mutate(Species = str_to_title(Species),
+           year = as.numeric(year)+1997) %>%
+    ggplot(aes(x=Prop_Removed_85, y=Diff, colour=Species, group=Species,
+               fill=Species)) +
+    # stat_smooth(method=function(formula,data,weights=weight) rlm(formula,
+    #                                                              data,
+    #                                                              weights=weight,
+    #                                                               method="MM"),
+    #             fullrange=TRUE, alpha=0.2) + 
+    geom_smooth(alpha=0.4) +
+    geom_point() +
+    geom_hline(yintercept = 0) +
+    geom_vline(xintercept = mean(Reduced_data_sp$prop_removed>0.85)) +
+    theme(legend.position = 'none') +
+    ylab('Percentage change in estimated relative abundance') +
+    xlab('Proportion of fishing events with > 85% baits removed') +
+    facet_wrap(~Species)
+    #ggtitle('Percentage Change in Relative Abundance Estimates vs. \nProportion of #Fishing Events with > 85% Baits Removed', subtitle = 'Percentage change is computed #for censored Poisson estimates \nrelative to CPUE-based estimates as baseline') + 
+
+results %>%
+    filter(Species %in% species_vec[cprop_values==1],
+           Method %in% c('CPUE-based', 'Censored')) %>%
+    group_by(year, Species) %>%
+    summarise(Diff = 100*((mean[Method=='Censored']-mean[Method=='CPUE-based'])/mean[Method=='CPUE-based'])) %>%
+    ungroup() %>%
+    full_join(sf::st_drop_geometry(Reduced_data_sp) %>%
+                  group_by(year) %>%
+                  summarize(Prop_Removed_85=mean(prop_removed>0.85),
+                            Prop_Removed_95=mean(prop_removed>0.95),
+                            Prop_Removed_100=mean(prop_removed==1),
+                            region='All') %>%
+                  mutate(year=factor(year)) %>%
+                  ungroup()) %>%
+    mutate(Species = str_to_title(Species),
+           year = as.numeric(year)+1997) %>%
+    ggplot(aes(x=Prop_Removed_100, y=Diff, colour=Species, group=Species,
+               fill=Species)) +
+    # stat_smooth(method=function(formula,data,weights=weight) rlm(formula,
+    #                                                              data,
+    #                                                              weights=weight,
+    #                                                               method="MM"),
+    #             fullrange=TRUE, alpha=0.2) + 
+    geom_smooth(alpha=0.4) +
+    geom_point() +
+    geom_hline(yintercept = 0) +
+    geom_vline(xintercept = mean(Reduced_data_sp$prop_removed==1)) +
+    theme(legend.position = 'none') +
+    ylab('Percentage change in estimated relative abundance') +
+    xlab('Proportion of fishing events with 100% of baits removed') +
+    facet_wrap(~Species)
+    #ggtitle('Percentage Change in Relative Abundance Estimates vs. \nProportion of #Fishing Events with 100% of Baits Removed', subtitle = 'Percentage change is computed #for censored Poisson estimates \nrelative to CPUE-based estimates as baseline') + 
+
+results %>%
+  filter(Species %in% species_vec[cprop_values==0.95],
+         !(Method %in% c('Bootstrap CPUE'))) %>%
+  mutate(Species = str_to_title(Species),
+         year = as.numeric(year)+1997) %>%
+  ggplot(aes(x=year, y=mean, ymax=q0.975, ymin=q0.025, 
+             colour=Method, group=Method, shape=Method)) +
+  geom_point(position = position_dodge(width=1), size=2) + 
+  geom_errorbar(position = position_dodge(width=1)) +
+  facet_wrap(~Species, scales = 'free') +
+  theme(legend.position = 'left',
+        axis.title.x = element_blank()) +
+  ylab('Estimated relative abundance') +
+  ggtitle('Relative abundance estimates vs. year for competing estimators',
+          subtitle = 'Mean and 95% confidence intervals shown for species judged to be affected by hook competition effects once 95% of baits have \nbeen removed.') +
+  theme(legend.position = c(0.5, 0.15))
+
+results %>%
+  filter(Species %in% species_vec[cprop_values==0.85],
+         !(Method %in% c('Bootstrap CPUE'))) %>%
+  mutate(Species = str_to_title(Species),
+         year = as.numeric(year)+1997) %>%
+  ggplot(aes(x=year, y=mean, ymax=q0.975, ymin=q0.025, 
+             colour=Method, group=Method, shape=Method)) +
+  geom_point(position = position_dodge(width=1), size=2) + 
+  geom_errorbar(position = position_dodge(width=1)) +
+  facet_wrap(~Species, scales = 'free') +
+  theme(legend.position = 'left') +
+  xlab('Year') +
+  ylab('Estimated relative abundance') +
+  ggtitle('Relative abundance estimates vs. year for competing estimators',
+          subtitle = 'Mean and 95% confidence intervals shown for species judged to be affected by hook competition \neffects once 85% of baits have been removed.') +
+  theme(legend.position = c(0.9, 0.8))
+
+results %>%
+  filter(Species %in% species_vec[cprop_values==1],
+         !(Method %in% c('Bootstrap CPUE'))) %>%
+  mutate(Species = str_to_title(Species),
+         year = as.numeric(year)+1997) %>%
+  ggplot(aes(x=year, y=mean, ymax=q0.975, ymin=q0.025, 
+             colour=Method, group=Method, shape=Method)) +
+  geom_point(position = position_dodge(width=1), size=2) + 
+  geom_errorbar(position = position_dodge(width=1)) +
+  facet_wrap(~Species, scales = 'free') +
+  theme(legend.position = 'left') +
+  xlab('Year') +
+  ylab('Estimated relative abundance') +
+  ggtitle('Relative abundance estimates vs. year for competing estimators',
+          subtitle = 'Mean and 95% confidence intervals shown for species judged to be affected by gear saturation \neffects once 100% of baits have been removed.') +
+  theme(legend.position = c(0.9, 0.8))
 
 ```
 
 Next, we compute metrics to compare the estimators. Due to some limited data in the first 2 years, we restrict our comparisons to the years 1998-2021.
 
 ```{r}
-library(dplyr)
-results <- do.call('rbind',results_list)
-
 results_summary <-
 results %>%
-filter(year>2 & region!='All') %>%
 group_by(Species,region) %>%
 summarise(Correlation_PI = ifelse(sum(Method=='CPUE-based') > 0 &
                                       sum(Method=='ICR-based') > 0 ,
@@ -344,18 +854,24 @@ results_summary$Measure <- factor(results_summary$Measure,
 Finally, we plot our results
 
 ```{r}
-library(ggplot2)
 results_summary %>%
+  mutate(Median = ifelse(Measure=='Percentage Unchanged',100*Median,Median),
+         MAD = ifelse(Measure=='Percentage Unchanged',100*MAD,MAD)) %>%
   ggplot(aes(x=Comparison, y=Median,
          ymax=Median+1.96*(MAD/sqrt(N_comparisons)),
          ymin=Median-1.96*(MAD/sqrt(N_comparisons)),
-         colour=Comparison, group=Comparison)) +
-  geom_errorbar() + geom_point() +
+         colour=Comparison, group=Comparison,
+         shape=Comparison)) +
+  geom_errorbar() + geom_point(size=3) +
   geom_hline(mapping = aes(yintercept=ifelse(
     Measure %in% c('Correlation','Percentage Overlap'), 1, 0))) +
   facet_wrap(~Measure, scales='free_y', nrow=3, ncol=2) +
-  ylab('Median Correlation or Median Difference') +
-  xlab('Estimators Being Compared')
+  ylab('Median correlation, percentage overlap, or difference') +
+  ggtitle('Comparison of relative abundance estimates from the three estimators',
+          subtitle = 'Results are aggregated over the 11 species and 23 years with 95% confidence intervals \ncomputed based on an assumption that the 11 species are a random sample from \npopulation of all species caught by IPHC survey') +
+  xlab('Estimators Being Compared') +
+  theme(axis.ticks.x = element_blank(),
+        axis.text.x = element_blank())
 
 ```
 

@@ -358,7 +358,7 @@ for(nsim in 68:n_sim)
           #   geom_errorbar() +
           #   geom_line(data = data.frame(x2=2:nstation, y2=mean_bite[-1,3]/mean_bite[1,3], UCL=0, LCL=0), aes(x=x2,y=y2), colour='red') +
           #   xlab('Station') +
-          #   ylab('Relative Abundance') + ggtitle('The true relative abundance shown in red')
+          #   ylab('relative abundance') + ggtitle('The true relative abundance shown in red')
 
           dat$bites <- round(dat$bites*comp_factor_fun(1-dat$prop_sat, rep(n_hooks,length(dat$prop_sat))))
           mod3 <- inla(bites ~ -1 + factor(station) + f(event_ID, constr=T, model='iid'),
@@ -409,7 +409,7 @@ for(nsim in 68:n_sim)
           #   geom_errorbar() +
           #   geom_line(data = data.frame(x2=2:nstation, y2=mean_bite[-1,3]/mean_bite[1,3], UCL=0, LCL=0), aes(x=x2,y=y2), colour='red') +
           #   xlab('Station') +
-          #   ylab('Adjusted Relative Abundance') + ggtitle('The true relative abundance shown in red')
+          #   ylab('Adjusted relative abundance') + ggtitle('The true relative abundance shown in red')
           #
           # Try the censored approach
           # derive the competition function
@@ -688,22 +688,22 @@ Results$model <- factor(Results$model, levels=c('naive','adjust','censored','cen
 
 # Create artificial 'relative abundance' of target and aggressive species plots
 rel_abund_dat <- data.frame(expand.grid(
-  species=c('target','aggressive'),
+  species=c('target species','aggressive species'),
   sat_level=factor(c('low','high'), levels=c('low','high'), ordered = T),
   mean_attract=factor(c('constant','constant','linear','linear')),
   Year=c(1,2,3,4,5,6)))
 rel_abund_dat$Abundance <- 1
-rel_abund_dat$Abundance[rel_abund_dat$species=='target'&
+rel_abund_dat$Abundance[rel_abund_dat$species=='target species'&
                           rel_abund_dat$mean_attract=='linear'] <-
-  rel_abund_dat$Year[rel_abund_dat$species=='target'&
+  rel_abund_dat$Year[rel_abund_dat$species=='target species'&
                        rel_abund_dat$mean_attract=='linear']
-rel_abund_dat$Abundance[rel_abund_dat$species=='aggressive'&
+rel_abund_dat$Abundance[rel_abund_dat$species=='aggressive species'&
                           rel_abund_dat$sat_level=='low'] <-
-  (c(120,140, 160, 180, 200, 280)/120)[rel_abund_dat$Year[rel_abund_dat$species=='aggressive'&
+  (c(120,140, 160, 180, 200, 280)/120)[rel_abund_dat$Year[rel_abund_dat$species=='aggressive species'&
                        rel_abund_dat$sat_level=='low']]
-rel_abund_dat$Abundance[rel_abund_dat$species=='aggressive'&
+rel_abund_dat$Abundance[rel_abund_dat$species=='aggressive species'&
                           rel_abund_dat$sat_level=='high'] <-
-  2*(c(120,140, 160, 180, 200, 280)/120)[rel_abund_dat$Year[rel_abund_dat$species=='aggressive'&
+  2*(c(120,140, 160, 180, 200, 280)/120)[rel_abund_dat$Year[rel_abund_dat$species=='aggressive species'&
                        rel_abund_dat$sat_level=='high']]
 
 rel_abund_plot <-
@@ -730,14 +730,15 @@ ggplot(rel_abund_dat,
         panel.background = element_blank(), axis.line = element_blank()) +
   guides(fill='none') +
   theme(strip.background = element_blank(),strip.text = element_blank(),
-        legend.position = c(0.45,0.9),legend.box.background=element_blank(),
+        legend.position = c(0.43,0.94),legend.box.background=element_blank(),
         legend.background=element_blank(),
         axis.title.y = element_blank()) +
-  guides(linetype=guide_legend('Species'))
+  guides(linetype=guide_legend('')) +
+  ylim(c(0,6))
 
-# THESE ARE DESIGNED FOR A4 LANDSCAPE
+# THESE ARE DESIGNED FOR 5.83x11.3
 # NOTICE THE HACK IN MULTIPLOT'S LAYOUT ARGUMENT
-multiplot(rel_abund_plot + ggtitle('Simulated Abundance'),
+multiplot(rel_abund_plot + ggtitle('Simulated abundance'),
 Results %>%
   filter(Station>1, sat_effects!='no saturation') %>%
   group_by(model, Station, bite_fun,  sat_level, sat_effects, mean_attract) %>%
@@ -754,12 +755,9 @@ ggplot(aes(x=Station, y=Mean, ymin=LCL, ymax=UCL, colour=model, group=model, sha
             ymin = -Inf,ymax = Inf,alpha = 0.3) +
   geom_errorbar(position = position_dodge(width=0.8)) +
   geom_point(position = position_dodge(width=0.8), size=2) +
-  facet_grid(mean_attract + sat_level ~ bite_fun + sat_effects , scales = 'free_y',
+  facet_grid(mean_attract + sat_level ~ bite_fun , scales = 'free_y',
              labeller = labeller(
-               sat_effects=c(
-                 `no saturation` = 'Bait Location Ability Unaffected',
-                 saturation = 'Bait Location Ability Declines'
-               ),
+
                bite_fun=c(
                  constant = 'Uniform Distributions',
                  mixed = 'Mixture of Distributions'
@@ -774,22 +772,23 @@ ggplot(aes(x=Station, y=Mean, ymin=LCL, ymax=UCL, colour=model, group=model, sha
                )
              )) +
   geom_hline(yintercept=0) +
-  ggtitle('Bias in Relative Abundance Indices vs Method',
-          subtitle = 'Rows are trends in relative abundance of target species and the average degree of hook saturation.\nColumns describe arrival time distributions and hook location abilities after 50% of baits removed.') +
-  ylab('Bias in Relative Abundance Index') +
+  ggtitle('Bias in relative abundance for each method')+#,
+          #subtitle = 'Rows are trends in relative abundance of target species and the average degree of hook saturation.\nColumns describe arrival time distributions and hook location abilities after 50% of baits removed.') +
+  ylab('Bias') +
   xlab('Year') + guides(fill='none') +
   scale_fill_brewer(palette = 'Pastel1') +
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
         panel.background = element_blank(), axis.line = element_blank(),
         legend.position = 'left', strip.text.y = element_blank()) +
-  scale_color_viridis_d(labels=c('CPUE','ICR','Censored','Censored 95')) +
-  scale_shape_manual(labels=c('CPUE','ICR','Censored','Censored 95'),
+  scale_color_viridis_d(labels=c('CPUE','ICR','Censored 0.85','Censored 0.95')) +
+  scale_shape_manual(labels=c('CPUE','ICR','Censored 0.85','Censored 0.95'),
                      values=c('circle','triangle','square','square')) +
-  guides(color=guide_legend(override.aes=list(fill=NA))),
+  guides(color=guide_legend(override.aes=list(fill=NA), title = 'Method'),
+         shape=guide_legend(title='Method')),
 rel_abund_plot,
-layout = matrix(c(rep(NA,72),rep(1,428),rep(2,2000)), nrow = 500, ncol = 5, byrow = F))
+layout = matrix(c(rep(NA,35),rep(1,465),rep(2,2000)), nrow = 500, ncol = 5, byrow = F))
 
-multiplot(rel_abund_plot + ggtitle('Simulated Abundance'),
+multiplot(rel_abund_plot + ggtitle('Simulated abundance'),
 Results %>%
   filter(Station>1, sat_effects!='no saturation') %>%
   group_by(model, Station, bite_fun,  sat_level, sat_effects, mean_attract) %>%
@@ -804,13 +803,13 @@ Results %>%
             aes(x=Station, y=Mean, ymin=LCL, ymax=UCL, colour=model, group=model, fill = mean_attract),
             xmin = -Inf,xmax = Inf,
             ymin = -Inf,ymax = Inf,alpha = 0.3) +
-  geom_errorbar(position = position_dodge(width=0.8)) +
+  #geom_errorbar(position = position_dodge(width=0.8)) +
   geom_point(position = position_dodge(width=0.8), size=2) +
   facet_grid(mean_attract + sat_level ~ bite_fun + sat_effects , scales = 'free_y',
              labeller = labeller(
                sat_effects=c(
-                 `no saturation` = 'Bait Location Ability Unaffected',
-                 saturation = 'Bait Location Ability Declines'
+                 `no saturation` = 'p* = 1',
+                 saturation = 'p* = 0.5'
                ),
                bite_fun=c(
                  constant = 'Uniform Distributions',
@@ -826,21 +825,22 @@ Results %>%
                )
              )) +
   geom_hline(yintercept=0) +
-  ggtitle('Bias in Relative Abundance Indices vs Method',
-          subtitle = 'Rows are trends in relative abundance of target species and the average degree of hook saturation.\nColumns describe arrival time distributions and hook location abilities after 50% of baits removed.') +
-  ylab('Bias in Relative Abundance Index') +
+  ggtitle('Bias in relative abundance for each method')+#,
+          #subtitle = 'Rows are trends in relative abundance of target species and the average degree of hook saturation.\nColumns describe arrival time distributions and hook location abilities after 50% of baits removed.') +
+  ylab('Bias') +
   xlab('Year') + guides(fill='none') +
   scale_fill_brewer(palette = 'Pastel1') +
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
         panel.background = element_blank(), axis.line = element_blank(),
         legend.position = 'left', strip.text.y = element_blank()) +
-  scale_color_viridis_d(labels=c('CPUE','ICR','Censored','Censored 95')) +
-  scale_shape_manual(labels=c('CPUE','ICR','Censored','Censored 95'),
+  scale_color_viridis_d(labels=c('CPUE','ICR','Censored 0.85','Censored 0.95')) +
+  scale_shape_manual(labels=c('CPUE','ICR','Censored 0.85','Censored 0.95'),
                      values=c('circle','triangle','square','square')) +
-  guides(color=guide_legend(override.aes=list(fill=NA))),
-layout = matrix(c(rep(NA,72),rep(1,428),rep(2,2000)), nrow = 500, ncol = 5, byrow = F))
+  guides(color=guide_legend(override.aes=list(fill=NA), title = 'Method'),
+         shape=guide_legend(title='Method')),
+layout = matrix(c(rep(NA,35),rep(1,465),rep(2,2000)), nrow = 500, ncol = 5, byrow = F))
 
-multiplot(rel_abund_plot + ggtitle('Simulated Abundance'),
+multiplot(rel_abund_plot + ggtitle('Simulated abundance'),
 Results %>%
   filter(Station>1, !(model %in% c('naive','adjust')), sat_effects!='no saturation') %>%
   group_by(model, Station, bite_fun,  sat_level, sat_effects, mean_attract) %>%
@@ -860,8 +860,8 @@ Results %>%
   facet_grid(mean_attract + sat_level ~ bite_fun + sat_effects , scales = 'free_y',
              labeller = labeller(
                sat_effects=c(
-                 `no saturation` = 'Bait Location Ability Unaffected',
-                 saturation = 'Bait Location Ability Declines'
+                 `no saturation` = 'p* = 1',
+                 saturation = 'p* = 0.5'
                ),
                bite_fun=c(
                  constant = 'Uniform Distributions',
@@ -877,9 +877,9 @@ Results %>%
                )
              )) +
   geom_hline(yintercept=0) +
-  ggtitle('Bias in Relative Abundance Indices vs Method',
-          subtitle = 'Rows are trends in relative abundance of target species and the average degree of hook saturation.\nColumns describe arrival time distributions and hook location abilities after 50% of baits removed.') +
-  ylab('Bias in Relative Abundance Index') +
+  ggtitle('Bias in relative abundance for each method')+#,
+          #subtitle = 'Rows are trends in relative abundance of target species and the average degree of hook saturation.\nColumns describe arrival time distributions and hook location abilities after 50% of baits removed.') +
+  ylab('Bias') +
   xlab('Year') + guides(fill='none') +
   scale_fill_brewer(palette = 'Pastel1') +
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
@@ -888,10 +888,11 @@ Results %>%
   scale_color_viridis_d(labels=c('Censored 85','Censored 95')) +
   scale_shape_manual(labels=c('Censored 85','Censored 95'),
                      values=c('circle','triangle')) +
-  guides(color=guide_legend(override.aes=list(fill=NA))),
-layout = matrix(c(rep(NA,72),rep(1,428),rep(2,2000)), nrow = 500, ncol = 5, byrow = F))
+  guides(color=guide_legend(override.aes=list(fill=NA), title = 'Method'),
+         shape=guide_legend(title='Method')),
+layout = matrix(c(rep(NA,35),rep(1,465),rep(2,2000)), nrow = 500, ncol = 5, byrow = F))
 
-multiplot(rel_abund_plot + ggtitle('Simulated Abundance'),
+multiplot(rel_abund_plot + ggtitle('Simulated abundance'),
 Results %>%
   filter(Station>1, sat_effects!='no saturation') %>%
   group_by(model, Station, bite_fun,  sat_level, sat_effects, mean_attract) %>%
@@ -911,8 +912,8 @@ Results %>%
   facet_grid(mean_attract + sat_level ~ bite_fun + sat_effects , scales = 'free_y',
              labeller = labeller(
                sat_effects=c(
-                 `no saturation` = 'Bait Location Ability Unaffected',
-                 saturation = 'Bait Location Ability Declines'
+                 `no saturation` = 'p* = 1',
+                 saturation = 'p* = 0.5'
                ),
                bite_fun=c(
                  constant = 'Uniform Distributions',
@@ -928,21 +929,22 @@ Results %>%
                )
              )) +
   geom_hline(yintercept=0.95) +
-  ggtitle('Coverage of Intervals of Relative Abundance Indices vs Method',
-          subtitle = 'Rows are trends in relative abundance of target species and the average degree of hook saturation.\nColumns describe arrival time distributions and hook location abilities after 50% of baits removed.') +
-  ylab('Coverage of relative abundance intervals') +
+  ggtitle('Coverage of intervals of relative abundance for each method')+#,
+          #subtitle = 'Rows are trends in relative abundance of target species and the average degree of hook saturation.\nColumns describe arrival time distributions and hook location abilities after 50% of baits removed.') +
+  ylab('Coverage') +
   xlab('Year') + guides(fill='none') +
   scale_fill_brewer(palette = 'Pastel1') +
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
         panel.background = element_blank(), axis.line = element_blank(),
         legend.position = 'left', strip.text.y = element_blank()) +
-  scale_color_viridis_d(labels=c('CPUE','ICR','Censored','Censored 95')) +
-  scale_shape_manual(labels=c('CPUE','ICR','Censored','Censored 95'),
+  scale_color_viridis_d(labels=c('CPUE','ICR','Censored 0.85','Censored 0.95')) +
+  scale_shape_manual(labels=c('CPUE','ICR','Censored 0.85','Censored 0.95'),
                      values=c('circle','triangle','square','square')) +
-  guides(color=guide_legend(override.aes=list(fill=NA))),
-layout = matrix(c(rep(NA,72),rep(1,428),rep(2,2000)), nrow = 500, ncol = 5, byrow = F))
+  guides(color=guide_legend(override.aes=list(fill=NA), title = 'Method'),
+         shape=guide_legend(title='Method')),
+layout = matrix(c(rep(NA,35),rep(1,465),rep(2,2000)), nrow = 500, ncol = 5, byrow = F))
 
-multiplot(rel_abund_plot + ggtitle('Simulated Abundance'),
+multiplot(rel_abund_plot + ggtitle('Simulated abundance'),
   Results %>%
     filter(Station>1, sat_effects!='no saturation') %>%
     group_by(model, Station, bite_fun,  sat_level, sat_effects, mean_attract) %>%
@@ -957,13 +959,13 @@ multiplot(rel_abund_plot + ggtitle('Simulated Abundance'),
               aes(x=Station, y=Mean, ymin=LCL, ymax=UCL, colour=model, group=model, fill = mean_attract),
               xmin = -Inf,xmax = Inf,
               ymin = -Inf,ymax = Inf,alpha = 0.3) +
-    geom_errorbar(position = position_dodge(width=0.8)) +
+    #geom_errorbar(position = position_dodge(width=0.8)) +
     geom_point(position = position_dodge(width=0.8), size=2) +
     facet_grid(mean_attract + sat_level ~ bite_fun + sat_effects , scales = 'free_y',
                labeller = labeller(
                  sat_effects=c(
-                   `no saturation` = 'Bait Location Ability Unaffected',
-                   saturation = 'Bait Location Ability Declines'
+                   `no saturation` = 'p* = 1',
+                   saturation = 'p* = 0.5'
                  ),
                  bite_fun=c(
                    constant = 'Uniform Distributions',
@@ -979,21 +981,22 @@ multiplot(rel_abund_plot + ggtitle('Simulated Abundance'),
                  )
                )) +
     geom_hline(yintercept=0) +
-    ggtitle('MSE in Relative Abundance Indices vs Method',
-            subtitle = 'Rows are trends in relative abundance of target species and the average degree of hook saturation.\nColumns describe arrival time distributions and hook location abilities after 50% of baits removed.') +
-    ylab('MSE in Relative Abundance Index') +
+    ggtitle('MSE in relative abundance for each method')+#,
+            #subtitle = 'Rows are trends in relative abundance of target species and the average degree of hook saturation.\nColumns describe arrival time distributions and hook location abilities after 50% of baits removed.') +
+    ylab('MSE') +
     xlab('Year') + guides(fill='none') +
     scale_fill_brewer(palette = 'Pastel1') +
     theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
           panel.background = element_blank(), axis.line = element_blank(),
           legend.position = 'left', strip.text.y = element_blank()) +
-    scale_color_viridis_d(labels=c('CPUE','ICR','Censored','Censored 95')) +
-    scale_shape_manual(labels=c('CPUE','ICR','Censored','Censored 95'),
+    scale_color_viridis_d(labels=c('CPUE','ICR','Censored 0.85','Censored 0.95')) +
+    scale_shape_manual(labels=c('CPUE','ICR','Censored 0.85','Censored 0.95'),
                        values=c('circle','triangle','square','square')) +
-    guides(color=guide_legend(override.aes=list(fill=NA))),
-  layout = matrix(c(rep(NA,72),rep(1,428),rep(2,2000)), nrow = 500, ncol = 5, byrow = F))
+    guides(color=guide_legend(override.aes=list(fill=NA), title = 'Method'),
+           shape=guide_legend(title='Method')),
+  layout = matrix(c(rep(NA,35),rep(1,465),rep(2,2000)), nrow = 500, ncol = 5, byrow = F))
 
-multiplot(rel_abund_plot + ggtitle('Simulated Abundance'),
+multiplot(rel_abund_plot + ggtitle('Simulated abundance'),
   Results %>%
     filter(Station>1, sat_effects!='no saturation', model!='naive') %>%
     group_by(model, Station, bite_fun,  sat_level, sat_effects, mean_attract) %>%
@@ -1013,8 +1016,8 @@ multiplot(rel_abund_plot + ggtitle('Simulated Abundance'),
     facet_grid(mean_attract + sat_level ~ bite_fun + sat_effects , scales = 'free_y',
                labeller = labeller(
                  sat_effects=c(
-                   `no saturation` = 'Bait Location Ability Unaffected',
-                   saturation = 'Bait Location Ability Declines'
+                   `no saturation` = 'p* = 1',
+                   saturation = 'p* = 0.5'
                  ),
                  bite_fun=c(
                    constant = 'Uniform Distributions',
@@ -1030,19 +1033,20 @@ multiplot(rel_abund_plot + ggtitle('Simulated Abundance'),
                  )
                )) +
     geom_hline(yintercept=0) +
-    ggtitle('MSE in Relative Abundance Indices vs Method',
-            subtitle = 'Rows are trends in relative abundance of target species and the average degree of hook saturation.\nColumns describe arrival time distributions and hook location abilities after 50% of baits removed.') +
-    ylab('MSE in Relative Abundance Index') +
+    ggtitle('MSE in relative abundance for each method')+#,
+            #subtitle = 'Rows are trends in relative abundance of target species and the average degree of hook saturation.\nColumns describe arrival time distributions and hook location abilities after 50% of baits removed.') +
+    ylab('MSE') +
     xlab('Year') + guides(fill='none') +
     scale_fill_brewer(palette = 'Pastel1') +
     theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
           panel.background = element_blank(), axis.line = element_blank(),
           legend.position = 'left', strip.text.y = element_blank()) +
-    scale_color_viridis_d(labels=c('CPUE','ICR','Censored','Censored 95')) +
-    scale_shape_manual(labels=c('CPUE','ICR','Censored','Censored 95'),
+    scale_color_viridis_d(labels=c('CPUE','ICR','Censored 0.85','Censored 0.95')) +
+    scale_shape_manual(labels=c('CPUE','ICR','Censored 0.85','Censored 0.95'),
                        values=c('circle','triangle','square','square')) +
-    guides(color=guide_legend(override.aes=list(fill=NA))),
-  layout = matrix(c(rep(NA,72),rep(1,428),rep(2,2000)), nrow = 500, ncol = 5, byrow = F))
+    guides(color=guide_legend(override.aes=list(fill=NA), title = 'Method'),
+           shape=guide_legend(title='Method')),
+  layout = matrix(c(rep(NA,35),rep(1,465),rep(2,2000)), nrow = 500, ncol = 5, byrow = F))
 
 
 Results %>%
@@ -1075,7 +1079,7 @@ Results %>%
   geom_hline(aes(yintercept=Mean2), linetype='dotted', colour='red') +
   facet_grid(sat_level + mean_attract ~ bite_fun + sat_effects) +
   ylab('Convergence Proportion') +
-  ggtitle('Proportion of 100 Simulations That Converged vs Method',
-          subtitle = 'Rows are degree of saturation and trend in relative abundance,\nColumns are correlation of target species\' abundance with saturation events \nSolid black line indicates proportion of converged simulations with 85% bait removal \nDotted red line indicates proportion of converged simulations with 100% bait removal') +
+  ggtitle('Proportion of 100 Simulations That Converged for each method')+#,
+          #subtitle = 'Rows are degree of saturation and trend in relative abundance,\nColumns are correlation of target species\' abundance with saturation events \nSolid black line indicates proportion of converged simulations with 85% bait removal \nDotted red line indicates proportion of converged simulations with 100% bait removal') +
   xlab('Year') +  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
   guides(colour='none')

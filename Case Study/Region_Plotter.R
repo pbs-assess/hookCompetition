@@ -17,9 +17,9 @@ plot(stations)
 stations <-
   stations %>%
   group_by(station) %>%
-  filter(row_number()==1 &
-           standard == 'Y' &
-           year > 1996)
+  filter(standard == 'Y' &
+         year >= 1998 &
+         row_number()==1)
 
 stations <-
   sf::st_transform(stations,crs=COAST@proj4string)
@@ -34,7 +34,7 @@ stations %>%
   #theme(panel.background = element_blank()) +
   theme(panel.background = element_rect(fill='light blue')) +
   geom_sf(data=COAST_sf, fill='light green', alpha=0.8) +
-  ggtitle('The locations of all 174 IPHC fishing stations') +
+  #ggtitle('The locations of all 171 IPHC fishing \nstations considered for analysis') +
   xlab('Longitude') + ylab('Latitude')
 
 
