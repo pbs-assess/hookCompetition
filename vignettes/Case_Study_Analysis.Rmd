@@ -248,6 +248,7 @@ censored_poisson_convergence <-
   rep('right-censored', length(simple_species_vec))
 # Which values of hat{p_i^star} should be used for each species based on earlier plots?
 cprop_values <- c(0.95, 0.95, 0.85, 1, 0.95, 0.95, 0.85,0.95, 0.95, 0.95, 1)
+upper_quantile_values <- c(1.1, 1.1, 1.1, 0.85, 1.1, 1.1, 1.1, 1.1, 1.1, 1.1, 0.85)
 
 fit_mods <- F
 
@@ -283,7 +284,7 @@ if(!is.null(ICR_ind$pred_overdisp))
 # First try to fit the censored Poisson model without any upper bound 
 censored_ind <-
 hookCompetition::censored_index_fun_sdmTMB(
-  data=Reduced_data_sp, survey_boundaries=survey_boundaries, species=i, M=1000, return=T, ICR_adjust=F, cprop=cprop_values[count], keep=F, use_upper_bound=FALSE, upper_bound_quantile=1.1, plot=F, allyears=F, station_effects=T, seed=0, verbose=F, n_trajectories=0, prev_fit =CPUE_ind$mod,
+  data=Reduced_data_sp, survey_boundaries=survey_boundaries, species=i, M=1000, return=T, ICR_adjust=F, cprop=cprop_values[count], keep=F, use_upper_bound=FALSE, upper_bound_quantile=upper_quantile_values[count], plot=F, allyears=F, station_effects=T, seed=0, verbose=F, n_trajectories=0, prev_fit =CPUE_ind$mod,
   preserve_inter_regional_differences = F, time_effect = 'unstructured',
   twentyhook_adjust = F
     )
@@ -333,6 +334,8 @@ print(paste0('Finished processing species number ',count,' out of ',length(simpl
 # the effects of different stations being added and dropped each year
 # the bootstrapping approach is sensitive. Restrict the analysis to
 # Only consider the stations online for all 23 years.
+if(fit_mods)
+{
 count <- 1
 for(i in simple_species_vec)
 {
@@ -358,6 +361,7 @@ hookCompetition:::bootstrap_index_fun(
   print(paste0('Finished processing species number ',count,' out of ',length(simple_species_vec)))
 
   count <- count + 1
+}
 }
 
 if(!fit_mods)
@@ -630,8 +634,8 @@ results %>%
   theme(legend.position = 'left',
         axis.title.x = element_blank()) +
   ylab('Estimated relative abundance') +
-  ggtitle('Relative abundance estimates vs. year for competing estimators',
-          subtitle = 'Mean and 95% confidence intervals shown for species judged to be affected by hook competition effects once 95% of baits have \nbeen removed.') +
+#  ggtitle('Relative abundance estimates vs. year for competing #estimators',
+#          subtitle = 'Mean and 95% confidence intervals shown #for species judged to be affected by hook competition effects #once 95% of baits have \nbeen removed.') +
   theme(legend.position = c(0.5, 0.15))
 
 results %>%
@@ -647,8 +651,8 @@ results %>%
   theme(legend.position = 'left') +
   xlab('Year') +
   ylab('Estimated relative abundance') +
-  ggtitle('Relative abundance estimates vs. year for competing estimators',
-          subtitle = 'Mean and 95% confidence intervals shown for species judged to be affected by hook competition \neffects once 85% of baits have been removed.') +
+  #ggtitle('Relative abundance estimates vs. year for competing #estimators',
+#          subtitle = 'Mean and 95% confidence intervals shown #for species judged to be affected by hook competition #\neffects once 85% of baits have been removed.') +
   theme(legend.position = c(0.9, 0.8))
 
 results %>%
@@ -664,8 +668,8 @@ results %>%
   theme(legend.position = 'left') +
   xlab('Year') +
   ylab('Estimated relative abundance') +
-  ggtitle('Relative abundance estimates vs. year for competing estimators',
-          subtitle = 'Mean and 95% confidence intervals shown for species judged to be affected by gear saturation \neffects once 100% of baits have been removed.') +
+  #ggtitle('Relative abundance estimates vs. year for competing #estimators',
+#          subtitle = 'Mean and 95% confidence intervals shown #for species judged to be affected by gear saturation \neffects #once 100% of baits have been removed.') +
   theme(legend.position = c(0.9, 0.8))
 
 ```
@@ -867,8 +871,8 @@ results_summary %>%
     Measure %in% c('Correlation','Percentage Overlap'), 1, 0))) +
   facet_wrap(~Measure, scales='free_y', nrow=3, ncol=2) +
   ylab('Median correlation, percentage overlap, or difference') +
-  ggtitle('Comparison of relative abundance estimates from the three estimators',
-          subtitle = 'Results are aggregated over the 11 species and 23 years with 95% confidence intervals \ncomputed based on an assumption that the 11 species are a random sample from \npopulation of all species caught by IPHC survey') +
+  ggtitle('Comparison of relative abundance estimates from the three estimators') +#,
+          #subtitle = 'Results are aggregated over the 11 #species and 23 years with 95% confidence intervals \ncomputed #based on an assumption that the 11 species are a random sample #from \npopulation of all species caught by IPHC survey') +
   xlab('Estimators Being Compared') +
   theme(axis.ticks.x = element_blank(),
         axis.text.x = element_blank())
