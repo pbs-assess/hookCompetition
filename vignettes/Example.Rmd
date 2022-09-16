@@ -496,7 +496,7 @@ spatio_temporal_CPUE_ind_sdmTMB <-
   spatiotemp_censored_index_fun_sdmTMB(data=Reduced_data_sp %>% filter(year>=1998), survey_boundaries=survey_boundaries, species='yelloweye', M=n_samp, return=T, ICR_adjust=F, cprop=1.1, keep=T, use_upper_bound=FALSE, upper_bound_quantile=1.1, plot=T, allyears=F, station_effects=T, seed=0, mesh=mesh, pixels=predict_pixels, covs=NULL, spatiotemporal='AR1', verbose = T, n_trajectories = 10, preserve_inter_regional_differences = F, grf_priors = sdmTMBpriors(
   matern_s = pc_matern(range_gt = 20, sigma_lt = 2),
   matern_st = pc_matern(range_gt = 20, sigma_lt = 2)),
-  smoothing_spline = F)
+  time_effect = 'unstructured')
 
 
 spatio_temporal_ICR_ind_sdmTMB <-
@@ -505,7 +505,7 @@ spatio_temporal_ICR_ind_sdmTMB <-
   matern_s = pc_matern(range_gt = 20, sigma_lt = 2),
   matern_st = pc_matern(range_gt = 20, sigma_lt = 2)),
   prev_fit = spatio_temporal_CPUE_ind_sdmTMB$mod,
-  smoothing_spline = F)
+  time_effect = 'unstructured')
 
 spatio_temporal_censored_ind_sdmTMB <-
   spatiotemp_censored_index_fun_sdmTMB(data=Reduced_data_sp %>% filter(year>=1998), survey_boundaries=survey_boundaries, species='yelloweye', M=n_samp, return=T, ICR_adjust=F, cprop=0.95, keep=F, use_upper_bound=TRUE, upper_bound_quantile=0.95, plot=T, allyears=F, station_effects=T, seed=0, mesh=mesh, pixels=predict_pixels, covs=NULL, spatiotemporal='AR1', verbose = T, n_trajectories = 10,
@@ -513,7 +513,7 @@ spatio_temporal_censored_ind_sdmTMB <-
   matern_s = pc_matern(range_gt = 20, sigma_lt = 2),
   matern_st = pc_matern(range_gt = 20, sigma_lt = 2)),
   prev_fit = spatio_temporal_CPUE_ind_sdmTMB$mod,
-  smoothing_spline = F)
+  time_effect = 'unstructured')
 
 # Remove the upper bound and upper quantile
 spatio_temporal_censored_ind_sdmTMB2 <-
@@ -523,7 +523,7 @@ spatio_temporal_censored_ind_sdmTMB2 <-
                                              matern_s = pc_matern(range_gt = 20, sigma_lt = 2),
                                              matern_st = pc_matern(range_gt = 20, sigma_lt = 2)),
                                          prev_fit = spatio_temporal_CPUE_ind_sdmTMB$mod,
-  smoothing_spline = F)
+  time_effect = 'unstructured')
 
 ```
 

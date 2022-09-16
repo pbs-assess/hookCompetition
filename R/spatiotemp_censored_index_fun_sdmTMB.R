@@ -25,12 +25,12 @@
 #' @param spatiotemporal character string "IID", "AR1", "RW", or "off". Do you want to identify temporal changes in relative abundance uniquely across space? Almost always yes.
 #' @param grf_priors a sdmTMBpriors() object specifying pcmatern priors on al grfs.
 #' @param prev_fit a previous sdmTMB model fit (probably returned using keep=T). Speeds up model fitting dramatically
-#' @param smoothing_spline Logical if TRUE (default) then relative coastwide abundance trend assumed to be smooth - perfect for long-living species with small home range. If FALSE, then a random walk temporal structure is assumed.
+#' @param time_effect Character if "unstructured" (default) then relative coastwide abundance trend allowed to vary freely each year, if "spline", it is assumed to be smooth - perfect for long-living species with small home range. If "random walk", then a random walk temporal structure is assumed.
 #' @export
 #' @importFrom magrittr %>%
 #' @importFrom rlang .data
 #' @import stats
-spatiotemp_censored_index_fun_sdmTMB <- function(data, survey_boundaries, species, M=1000, return=T, ICR_adjust=F, cprop=1.1, keep=F, use_upper_bound=FALSE, upper_bound_quantile=1, plot=T, allyears=F, station_effects=T, seed=0, verbose=F, n_trajectories=10, preserve_inter_regional_differences=F, mesh, sdpe, pixels, spatiotemporal='AR1', covs=NULL, grf_priors=sdmTMB::sdmTMBpriors(), prev_fit=NULL, smoothing_spline=T)
+spatiotemp_censored_index_fun_sdmTMB <- function(data, survey_boundaries, species, M=1000, return=T, ICR_adjust=F, cprop=1.1, keep=F, use_upper_bound=FALSE, upper_bound_quantile=1, plot=T, allyears=F, station_effects=T, seed=0, verbose=F, n_trajectories=10, preserve_inter_regional_differences=F, mesh, sdpe, pixels, spatiotemporal='AR1', covs=NULL, grf_priors=sdmTMB::sdmTMBpriors(), prev_fit=NULL, time_effect='unstructured')
 {
   # remove geometry features from data
   data$N_dat <- as.numeric(as.matrix(data[,c(paste0('N_it_',species))])[,1])
@@ -132,7 +132,7 @@ spatiotemp_censored_index_fun_sdmTMB <- function(data, survey_boundaries, specie
       NA
   }
 
-  if(smoothing_spline)
+  if(time_effect=='spline')
   {
     time_varying <- NULL
     if(station_effects)
@@ -152,7 +152,7 @@ spatiotemp_censored_index_fun_sdmTMB <- function(data, survey_boundaries, specie
     (1 | event_ID)')
     }
   }
-  if(!smoothing_spline)
+  if(time_effect=='random walk')
   {
     time_varying <- formula('~ 1')
     if(station_effects)
@@ -172,7 +172,54 @@ spatiotemp_censored_index_fun_sdmTMB <- function(data, survey_boundaries, specie
     (1 | event_ID)')
     }
   }
-
+  if(time_effect=='unstructured')
+  {
+    data$year <- factor(data$year)
+    data$region_INLA <- factor(data$region_INLA)
+    time_varying <- NULL
+    if(nregion > 1)
+    {
+      if(station_effects)
+      {
+        # # define formulae
+        formulae <- formula('N_dat ~ -1 +
+      year:region_INLA +
+    twentyhooks +
+    offset +
+    (1 | event_ID) + (1 | station_ID)')
+      }
+      if(!station_effects)
+      {
+        # # define formulae
+        formulae <- formula('N_dat ~ -1 +
+      year:region_INLA +
+    twentyhooks +
+    offset +
+    (1 | event_ID)')
+      }
+    }
+    if(nregion == 1)
+    {
+      if(station_effects)
+      {
+        # # define formulae
+        formulae <- formula('N_dat ~ -1 +
+      year +
+    twentyhooks +
+    offset +
+    (1 | event_ID) + (1 | station_ID)')
+      }
+      if(!station_effects)
+      {
+        # # define formulae
+        formulae <- formula('N_dat ~ -1 +
+      year +
+    twentyhooks +
+    offset +
+    (1 | event_ID)')
+      }
+    }
+  }
   # sdmTMB only fits the model at years present in the data. Fill in missing years
   missing_years <- NULL
   # Doesn't yet work
