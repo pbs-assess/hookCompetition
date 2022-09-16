@@ -174,9 +174,9 @@ spatiotemp_censored_index_fun_sdmTMB <- function(data, survey_boundaries, specie
   }
   if(time_effect=='unstructured')
   {
+    time_varying <- NULL
     data$year <- factor(data$year)
     data$region_INLA <- factor(data$region_INLA)
-    time_varying <- NULL
     if(nregion > 1)
     {
       if(station_effects)
@@ -223,7 +223,8 @@ spatiotemp_censored_index_fun_sdmTMB <- function(data, survey_boundaries, specie
   # sdmTMB only fits the model at years present in the data. Fill in missing years
   missing_years <- NULL
   # Doesn't yet work
-   if(sum(!(min_year:max_year %in% data$year)) > 0)
+   if(sum(!(min_year:max_year %in% data$year)) > 0 &
+      time_effect != 'unstructured')
    {
      missing_years <- (min_year:max_year)[!(min_year:max_year %in% data$year)]
    }
