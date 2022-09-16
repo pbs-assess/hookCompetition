@@ -15,7 +15,7 @@ library(hookCompetition)
 
 ## Case Study
 
-The Rmarkdown document runs the analysis used in the paper (LINK IT HERE).
+The Rmarkdown document runs the analysis used in the paper *A statistical censoring approach accounts for hook competition in abundance indices from longline surveys*.
 
 First, we load in the data
 

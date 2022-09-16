@@ -283,19 +283,19 @@ We now fit all three indices within sdmTMB
 CPUE_ind_sdmTMB <-
 censored_index_fun_sdmTMB(
   data=Reduced_data_sp %>% filter(year>=1998), survey_boundaries=survey_boundaries, species='yelloweye', M=n_samp, return=T, ICR_adjust=F, cprop=1.1, keep=F, use_upper_bound=FALSE, upper_bound_quantile=1.1, plot=T, allyears=F, station_effects=T, seed=0, verbose=F, n_trajectories=10,
-  preserve_inter_regional_differences = F, smoothing_spline = T
+  preserve_inter_regional_differences = F, time_effect = 'spline'
 )
 
 ICR_ind_sdmTMB <-
 censored_index_fun_sdmTMB(
   data=Reduced_data_sp %>% filter(year>=1998), survey_boundaries=survey_boundaries, species='yelloweye', M=n_samp, return=T, ICR_adjust=T, cprop=1.1, keep=F, use_upper_bound=FALSE, upper_bound_quantile=1.1, plot=T, allyears=F, station_effects=T, seed=0, verbose=F, n_trajectories=10,
-  preserve_inter_regional_differences = F, smoothing_spline = T
+  preserve_inter_regional_differences = F, time_effect = 'spline'
 )
 
 censored_ind_sdmTMB <-
 censored_index_fun_sdmTMB(
   data=Reduced_data_sp %>% filter(year>=1998), survey_boundaries=survey_boundaries, species='yelloweye', M=n_samp, return=T, ICR_adjust=F, cprop=0.95, keep=F, use_upper_bound=TRUE, upper_bound_quantile=0.95, plot=T, allyears=F, station_effects=T, seed=0, verbose=F, n_trajectories=10,
-  preserve_inter_regional_differences = F, smoothing_spline = T
+  preserve_inter_regional_differences = F, time_effect = 'spline'
     )
 
 ```
