@@ -186,7 +186,7 @@ censored_index_fun_sdmTMB <-
           # # define formulae
           formulae <- formula(
             paste0('N_dat ~ -1 +  region_INLA +
-    s(year, by=region_INLA) + offset +
+    s(year, by=region_INLA) +
     (1 | event_ID) + (1 | station_ID)',
                    ifelse(twentyhook_adjust,' +
     twentyhooks','')
@@ -198,7 +198,7 @@ censored_index_fun_sdmTMB <-
           formulae <- formula(
             paste0('N_dat ~ -1 +
           region_INLA +
-    s(year, by=region_INLA) + offset +
+    s(year, by=region_INLA) +
     (1 | event_ID)',
                    ifelse(twentyhook_adjust,' +
     twentyhooks','')
@@ -214,7 +214,7 @@ censored_index_fun_sdmTMB <-
           # # define formulae
           formulae <- formula(
             paste0('N_dat ~ -1 +
-    s(year) + offset +
+    s(year) +
     (1 | event_ID) + (1 | station_ID)',
                    ifelse(twentyhook_adjust,' +
     twentyhooks','')
@@ -225,7 +225,7 @@ censored_index_fun_sdmTMB <-
           # # define formulae
           formulae <- formula(
             paste0('N_dat ~ -1 +
-    s(year) + offset +
+    s(year) +
     (1 | event_ID)',
                    ifelse(twentyhook_adjust,' +
     twentyhooks','')
@@ -247,9 +247,8 @@ censored_index_fun_sdmTMB <-
       {
         # # define formulae
         formulae <- formula(paste0('N_dat ~ -1 +
-        offset +
     (1 | event_ID) + (1 | station_ID)',
-                            ifelse(twentyhook_adjust,' +
+                                   ifelse(twentyhook_adjust,' +
     twentyhooks','')
         ))
       }
@@ -257,7 +256,6 @@ censored_index_fun_sdmTMB <-
       {
         # # define formulae
         formulae <- formula(paste0('N_dat ~ -1 +
-        offset +
     (1 | event_ID)',
                                    ifelse(twentyhook_adjust,' +
     twentyhooks','')
@@ -279,7 +277,7 @@ censored_index_fun_sdmTMB <-
         {
           # # define formulae
           formulae <- formula(paste0('N_dat ~ -1 +
-        offset + year:region_INLA +
+        year:region_INLA +
     (1 | event_ID) + (1 | station_ID)',
                                      ifelse(twentyhook_adjust,' +
     twentyhooks','')
@@ -289,7 +287,7 @@ censored_index_fun_sdmTMB <-
         {
           # # define formulae
           formulae <- formula(paste0('N_dat ~ -1 +
-        offset + year:region_INLA
+        year:region_INLA
     (1 | event_ID)',
                                      ifelse(twentyhook_adjust,' +
     twentyhooks','')
@@ -303,7 +301,7 @@ censored_index_fun_sdmTMB <-
         {
           # # define formulae
           formulae <- formula(paste0('N_dat ~ -1 +
-        offset + year +
+        year +
     (1 | event_ID) + (1 | station_ID)',
                                      ifelse(twentyhook_adjust,' +
     twentyhooks','')
@@ -313,7 +311,7 @@ censored_index_fun_sdmTMB <-
         {
           # # define formulae
           formulae <- formula(paste0('N_dat ~ -1 +
-        offset + year +
+        year +
     (1 | event_ID)',
                                      ifelse(twentyhook_adjust,' +
     twentyhooks','')
@@ -385,11 +383,12 @@ censored_index_fun_sdmTMB <-
         spatiotemporal = 'off',
         mesh = mesh_tmp,
         silent = !verbose,
-        return_tmb_object = TRUE,
+        offset = data$offset,
+        #return_tmb_object = TRUE,
         #extra_time = missing_years,
         time_varying = time_varying,
-        weights = data$weights,
-        control = sdmTMB::sdmTMBcontrol(map_rf = TRUE)
+        weights = data$weights#,
+        #control = sdmTMB::sdmTMBcontrol(map_rf = TRUE)
       )
     }
     if (cprop <= 1 & !is.null(prev_fit))
@@ -412,11 +411,12 @@ censored_index_fun_sdmTMB <-
           experimental = list(lwr = as.integer(data$low), upr =
                                 as.integer(data$high)),
           silent = !verbose,
-          return_tmb_object = TRUE,
+          offset = data$offset,
+          #return_tmb_object = TRUE,
           #extra_time = missing_years,
           time_varying = time_varying,
-          weights = data$weights,
-          control = sdmTMB::sdmTMBcontrol(map_rf = TRUE)
+          weights = data$weights#,
+          #control = sdmTMB::sdmTMBcontrol(map_rf = TRUE)
         )
       )
     }
