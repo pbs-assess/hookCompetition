@@ -12,7 +12,7 @@ knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>"
 )
-knitr::opts_chunk$set(fig.width=12, fig.height=8) 
+knitr::opts_chunk$set(fig.width=12, fig.height=8)
 ```
 
 ```{r setup}
@@ -41,7 +41,7 @@ This markdown document will outline the steps needed to use the hookCompetition 
 ```{r loadpackage}
 # Set the number of cores to use to generate the vignette
 n_cores <- 1
-# Set the number of samples to use for bootstrapping for Monte Carlo approximations to 
+# Set the number of samples to use for bootstrapping for Monte Carlo approximations to
 # posterior quantities. Should be set much higher for real applications!
 n_samp <- 100
 ```
@@ -51,7 +51,7 @@ n_samp <- 100
 The function `read_Data_hookcomp()` reads in longline catch count data collected by the IPHC. The arguments to the function are:
 
 - `species_vec` is a character vector of the one or more species desired for modelling (e.g. 'yelloweye rockfish')
-- `at_PBS` is a logical flag determining if the user has access to the gf data. If FALSE, yelloweye rockfish must be the specified species. 
+- `at_PBS` is a logical flag determining if the user has access to the gf data. If FALSE, yelloweye rockfish must be the specified species.
 - `simple_species_vec` is a character vector containing the desired shortened names of the species (e.g. 'yelloweye')
 - `data_wd` is a character vector stating the working directory where the rds files will be saved
 - `min_dist` is a numeric stating the minimum distance (km) required for a temporary IPHC station to be from a permanent IPHC station to be included. If 0, discard all temporary stations from analysis.
@@ -59,7 +59,7 @@ The function `read_Data_hookcomp()` reads in longline catch count data collected
 - `years_all_vec` is a numeric vector stating the years all hooks were enumerated
 - `years_20_vec` is a numeric vector stating the years only 20 hooks were enumerated. Only data from years specified in the above two arguments are downloaded and included for later analysis.
 - `survey_boundaries`   survey_boundaries is a `sf` polygons object containing user-specified survey boundaries for indices to be computed in. If NULL, then QCS, WCHG, WCVI, HS is used. The data.frame *must* contain a factor variable `Region` with levels equal to the names of the regions
-- `preserve_inter_regional_differences` Logical. If `TRUE` the relative magnitudes in catch rates between the subregions are preserved. If `FALSE` the catch rates are normalized separately within each subregion. Use the latter if differences in absolute abundances between regions are not desired and only temporal trends *within* each subregion are desired. 
+- `preserve_inter_regional_differences` Logical. If `TRUE` the relative magnitudes in catch rates between the subregions are preserved. If `FALSE` the catch rates are normalized separately within each subregion. Use the latter if differences in absolute abundances between regions are not desired and only temporal trends *within* each subregion are desired.
 
 
 ```{r loaddata, message=F, warning=F, cache=F}
@@ -83,7 +83,7 @@ data <- hookCompetition::read_Data_hookcomp(
             "sablefish",
             "walleye"),
   at_PBS = F,
-  data_wd = './',
+  data_wd = '../',
   min_dist = 50,
   min_dist_to_boundary = 0,
   years_all_vec = c(1995,1996,2003:2012, 2014:2019),
@@ -114,7 +114,7 @@ rm(data)
 - `station` containing the index of the fishing station where the fishing event took place. Useful if the same locations are visited each year (for multiple years)
 - `twentyhooks` a bindary variable indicating years where a different number of hooks were used. Useful if 2 fishing protocols are used and differences want to be controlled for. Set to 0 if not relevant.
 
-# Step 3 - Fit the indices without the spatio-temporal random effects. 
+# Step 3 - Fit the indices without the spatio-temporal random effects.
 
 We derive bootstrap indices for a set of test species using the function `bootstrap_index_fun_run`. We derive an overall index and a subregion index (with subregions defined by the survey boundaries).
 
@@ -127,7 +127,7 @@ The function `bootstrap_index_fun_run` takes as arguments:
 - `ncpus` specifies the number of cores to use in parallel
 - `type` specifies the type of bootstrap intervals to use (default percentile `perc`)
 - `return` when TRUE it returns the indices
-- `plot` when TRUE it returns the plot (can be memory costly when using large numbers of species). 
+- `plot` when TRUE it returns the plot (can be memory costly when using large numbers of species).
 
 ```{r bootstrap, cache=F, warning=F, message=F}
 bootstrap_ind <-
@@ -146,7 +146,7 @@ bootstrap_index_fun_run(species = 'yelloweye',
 The function `bootstrap_index_fun_run` returns a list containing 3 objects:
 
 - `species_boot` A data.frame containing the relative abundance indices by region
-- `ind_plot` A `ggplot2` object containing the relatie abundance plot 
+- `ind_plot` A `ggplot2` object containing the relatie abundance plot
 - `preserve_inter_regional_differences` A logical stating if the relative abundance indices can be compared between regions (if TRUE).
 
 We derive hook-competition-adjusted bootstrap indices using the same function `bootstrap_index_fun_run()`, but adding the argument `ICR_adjust=TRUE`. We derive an overall index and a subregion index (with subregions defined by the survey boundaries).
@@ -166,7 +166,7 @@ bootstrap_index_fun_run(species = 'yelloweye',
                           )
 ```
 
-Finally, we compute Poisson-lognormal model-based indices of relative abundance. These include the CPUE-based (unadjusted), hook-competition-adjusted (ICR-based), and censored likelihood-based indices. 
+Finally, we compute Poisson-lognormal model-based indices of relative abundance. These include the CPUE-based (unadjusted), hook-competition-adjusted (ICR-based), and censored likelihood-based indices.
 
 To compute all three indices we use the function `censored_index_fun`. This function takes many arguments, many of which are optional. The non-optional arguments are:
 
@@ -313,7 +313,7 @@ The function `make_spatial_objects()` achieves this. It takes required arguments
 - `survey_boundaries` a `sf` polygons object containing the survey boundary definitions
 - `prior_range` Choose a value in kilometers such that the species density at two locations separated by distances greater than this will be `approximately' independent (typically a lower bound is chosen).
 - `prior_range_prob` What is you prior probability that the spatial range will be smaller than this value (typically a small probability is chosen to reduce the chances of over-fitting - see the Details section of  ?INLA::inla.spde2.pcmatern for details)
-- `prior_sigma` Choose a value for the marginal standard deviation of the random field. Typically an upper bound is used. Remember our linear predictor is on the log scale, so think about constraining exp(+- 2*SD) in terms of multiplicative regional differences. 
+- `prior_sigma` Choose a value for the marginal standard deviation of the random field. Typically an upper bound is used. Remember our linear predictor is on the log scale, so think about constraining exp(+- 2*SD) in terms of multiplicative regional differences.
 - `prior_sigma_prob` What is your prior probability that the true marginal standard deviation exceeds this? (see the Details section of  ?INLA::inla.spde2.pcmatern for details)
 
 It takes optional arguments:
@@ -326,9 +326,9 @@ It takes optional arguments:
 spatial_obj <- make_spatial_objects(
   data=Reduced_data_sp,
   survey_boundaries = survey_boundaries,
-  mesh_coast = NULL, hires_coast = NULL, 
+  mesh_coast = NULL, hires_coast = NULL,
   prior_range = 20, prior_range_prob = 0.01,
-  prior_sigma = 2, prior_sigma_prob = 0.01 
+  prior_sigma = 2, prior_sigma_prob = 0.01
 )
 
 # load it into the global envirionment
@@ -427,19 +427,19 @@ Now we plot maps of yelloweye density from the three spatio-temporal models in t
 ```{r spatiotemporal_plot, eval=F, message=FALSE, warning=FALSE}
 # plot the posterior mean yelloweye density on a map in year 2000
 spatio_temporal_plot_fun(
-  spatio_temporal_CPUE_plotdf, year=2000, variable='mean', 
+  spatio_temporal_CPUE_plotdf, year=2000, variable='mean',
   hires_COAST=Coast_hires, plot_figure=T, return_figure=F
 )
 
 # plot the posterior mean yelloweye density on a map in year 2000
 spatio_temporal_plot_fun(
-  spatio_temporal_ICR_plotdf, year=2000, variable='mean', 
+  spatio_temporal_ICR_plotdf, year=2000, variable='mean',
   hires_COAST=Coast_hires, plot_figure=T, return_figure=F
 )
 
 # plot the posterior mean yelloweye density on a map in year 2000
 spatio_temporal_plot_fun(
-  spatio_temporal_censored_plotdf, year=2000, variable='mean', 
+  spatio_temporal_censored_plotdf, year=2000, variable='mean',
   hires_COAST=Coast_hires, plot_figure=T, return_figure=F
 )
 
@@ -489,7 +489,7 @@ ggplot2::ggplot() + inlabru::gg(spatio_temporal_ICR_plotdf[which(spatio_temporal
 ggplot2::ggplot() + inlabru::gg(spatio_temporal_censored_plotdf[which(spatio_temporal_censored_plotdf$year==2000), c('mean')]) + inlabru::gg(sf::as_Spatial(Coast_hires)) + colsc(as.matrix(spatio_temporal_censored_plotdf[which(spatio_temporal_censored_plotdf$year==2000), c('mean')])) + ggplot2::ggtitle('Censored Poisson yelloweye abundance in year 2000',subtitle = 'Censorship defined as 95% or more baits removed \nCensorship removed from upper 10% of values each year')
 ```
 
-Note that we can also fit spatiotemporal models in sdmTMB using `spatio_temporal_censored_ind_sdmTMB()`. It takes the same arguments with the exception of priors. 
+Note that we can also fit spatiotemporal models in sdmTMB using `spatio_temporal_censored_ind_sdmTMB()`. It takes the same arguments with the exception of priors.
 
 ```{r spatiotemporal-sdmTMB, eval=F, cache=F, warning=F, message=F}
 spatio_temporal_CPUE_ind_sdmTMB <-
@@ -518,7 +518,7 @@ spatio_temporal_censored_ind_sdmTMB <-
 # Remove the upper bound and upper quantile
 spatio_temporal_censored_ind_sdmTMB2 <-
     spatiotemp_censored_index_fun_sdmTMB(data=Reduced_data_sp %>% filter(year>=1998), survey_boundaries=survey_boundaries, species='yelloweye', M=n_samp, return=T, ICR_adjust=F, cprop=0.95, keep=F, use_upper_bound=FALSE, upper_bound_quantile=1, plot=T, allyears=F, station_effects=T, seed=0, mesh=mesh, pixels=predict_pixels, covs=NULL, spatiotemporal='AR1', verbose = T, n_trajectories = 10,
-                                         preserve_inter_regional_differences = F, 
+                                         preserve_inter_regional_differences = F,
                                          grf_priors = sdmTMBpriors(
                                              matern_s = pc_matern(range_gt = 20, sigma_lt = 2),
                                              matern_st = pc_matern(range_gt = 20, sigma_lt = 2)),
@@ -526,4 +526,3 @@ spatio_temporal_censored_ind_sdmTMB2 <-
   time_effect = 'unstructured')
 
 ```
-
