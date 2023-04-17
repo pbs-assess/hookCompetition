@@ -23,7 +23,7 @@ The simulation study accompanying the paper can be found in the folder 'Simulati
 
 ## Notes from Joe when Andy visited him in Sept 2022 and by Zoom in Oct 2022
 
-Sean and Jillian -- some of this should be useful. I haven't had a chance to run anything more. I think for IPHC data it will use data as saved by my gfiphc package.
+Sean and Jillian -- some of this should be useful. I haven't had a chance to run anything more. I think for IPHC data it will use data as saved by my gfiphc package, which I haven't updated yet with 2022 data.
  
 Joe pushed new `censored_index_fun_sdmTMB()` to hookCompetition, for operationally making indices.
 
@@ -31,8 +31,6 @@ Zoom chat 24/10/22 - IPHC data suggests fitting unstructured (no spatial) models
 
 For generating new indices see Example.Rmd vignette, but for proper use (?) recommend using the functions that end in ...sdmTMB() to go into pacea, for example.
 
-Use Censored_Longline_RCode (joe's GitHub) as submitted with manuscript, if have to re-make any figures. .rds files of results are saved. 
-
-hookCompetition/Case Study is original code that then got tidied up into Censored_Longline_RCode/
+Use `Censored_Longline_RCode` (joe's GitHub) as submitted with manuscript, if have to re-make any figures. .rds files of results are saved. hookCompetition/Case Study is original code that then got tidied up into `Censored_Longline_RCode/`
 
 Andy: ran hookCompetition/vignette/Example.Rmd at PSEC but was slow (think just due to connection): looks like code extracts new .rds files, but Andy ran from vignettes/ where it's saved them. They should match the ones sent by Joe in ../, maybe just move those to dummy folder so I have them, but I think they should be duplicated.
